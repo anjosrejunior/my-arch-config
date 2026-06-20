@@ -5,9 +5,25 @@ Caso tenha dúvidas:
 2. Nvidia Hyprland (Para as placas da Nvidia funcionarem corretamente no Hyprland são necessários alguns passos a mais.): https://wiki.hypr.land/Nvidia/
 3. Wiki do Arch Linux: https://wiki.archlinux.org/title/NVIDIA#Unsupported_drivers.
 
-### Nvidia Drivers 1050ti
+# Base necessária
 
-#### 1. Instalar Drivers
+É obrigatório que tenham os headeras do kernel, e vai depender do seu kernel.
+
+```bash
+sudo pacman -S linux-headers
+```
+
+```bash
+sudo pacman -S linux-zen-headers
+```
+
+```bash
+sudo pacman -S linux-lts-headers
+```
+
+# Nvidia Drivers 1050ti
+
+## 1. Instalar Drivers
 
 A GTX 1050 Ti (arquitetura Pascal) ainda possui suporte nos drivers da série 580. Em alguns cenários pode ser necessário utilizar os pacotes da série 580 disponíveis no AUR.
 
@@ -18,7 +34,7 @@ sudo pacman -S libva-nvidia-driver
 yay -S nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
 ```
 
-#### 2. Config do hyprland.lua
+## 2. Config do hyprland.lua
 
 Agora é necessário fazer alguns passos a mais que a wiki do Hyprland pede.
 
