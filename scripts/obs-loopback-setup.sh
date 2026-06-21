@@ -11,10 +11,10 @@ pactl unload-module module-remap-source 2>/dev/null
 pactl unload-module module-null-sink 2>/dev/null
 
 pactl load-module module-null-sink \
-    sink_name=Saida_OBS \
-    sink_properties=device.description=Cabo_Virtual_OBS
+    sink_name=OBS_Output \
+    sink_properties=device.description=Virtual_Cable_OBS
 
 pactl load-module module-remap-source \
-    master=Saida_OBS.monitor \
-    source_name=Entrada_Virtual_OBS \
-    source_properties=device.description=Microfone_Virtual_OBS
+    master=OBS_Output.monitor \
+    source_name=Virtual_Input_OBS \
+    source_properties=device.description=Virtual_Mic_OBS
