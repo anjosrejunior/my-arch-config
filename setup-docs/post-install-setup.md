@@ -1,28 +1,13 @@
-# Zen Browser
+# Audio
 
-## Tema da Dark
 ```bash
-sudo flatpak override --env=GTK_THEME=Materia-dark app.zen_browser.zen
+sudo pacman -S pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
 ```
 
-## Configurar uma pasta válida para o navegador compartilhar com o sistema
-```bash
-sudo flatpak override --filesystem=/home/ghost/flatpaks-share app.zen_browser.zen
-```
-
-# Google
-
-Apenas faça o download:
-```bash
-yay -S google-chrome
-```
-
-# Key Ring
-
-Vou usar aqui o do Gnome ele é simples e mais fácil de usar, muitos programadas necessitam dele para fazer login no desktop.
+## qwgraph (Controle de canais de áudio)
 
 ```bash
-sudo pacman -S gnome-keyring libsecret seahorse
+sudo pacman -S qpwgraph
 ```
 
 # Wallpaper
@@ -102,28 +87,6 @@ hl.exec_cmd("hyprpaper &")
 
 Agora é só reiniciar o Hyprland (ou rodar hyprpaper no terminal pela primeira vez) para ver o seu novo wallpaper rodando!
 
-# Thunar
-
-Comando para instalar o thunar
-```bash
-sudo pacman -S thunar thunar-archive-plugin thunar-volman tumbler 
-```
-
-Pacotes do gerenciador de arquivos virtual e ferramentas para lidar com arquivos compactados.
-
-```bash
-# Pacote necessário
-sudo pacman -S gvfs xarchiver unzip
-```
-
-# Audio
-
-Apenas faça o download
-
-```bash
-sudo pacman -S pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
-```
-
 # Dark Theme
 
 Pacotes necessários:
@@ -151,20 +114,44 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 ```
 
-# OBS
+# Key Ring
 
-Primeiramente sempre mantenha o sistema atualizado o OBS tem rusga com Arch linux desatualizado. Erros ao instalar o OBS normalmente se resolve de primeira com um `sudo pacman -Syu`
-
-Comando para instalar o OBS Studio
+Vou usar aqui o do Gnome ele é simples e mais fácil de usar, muitos programadas necessitam dele para fazer login no desktop.
 
 ```bash
-sudo pacman -S obs-studio
+sudo pacman -S gnome-keyring libsecret seahorse
 ```
 
-Para termos um setup completo do obs, pensado para reuniões aonde é necessário da camera virtual, o audio do seu microfone e o audio do dektop combinado com o do microfone, é necessário do `v4l2loopback`, os headers do kernel, dependendo do seu kernel, e o pipewire instalado.
+# Keybord Setup (Configurar Teclado internacional US)
 
-```bash
-sudo pacman -S v4l2loopback-dkms
+1. Altere a Env do Hyprland
+
+Coloque essa variáveis de ambiente dentro do arquivo de configuracao `hyprland.lua`, acessando com o comando `micro .config/hypr/hyprland.lua`
+
+Nas configurações do teclado:
+
+```lua
+hl.config({
+    input = {
+        kb_layout  = "us",
+        kb_variant = "",
+        kb_model   = "",
+        kb_options = "",
+        kb_rules   = "",
+
+        follow_mouse = 1,
+
+        sensitivity = 0, -- -1.0 - 1.0, 0 means no modification.
+
+        touchpad = {
+            natural_scroll = false,
+        },
+    },
+})
 ```
 
-Caso va utilizar o droid cam que é uma ajuda e tanto utilizar o celular como câmera, aqui esta o link do git hub com as releases, e so baixar ele via zip e executar o arquivo `install.sh` que vem dentro do pacote: https://github.com/dev47apps/droidcam-obs-plugin/releases. Sempre busque a versão mais nova quando o assunto é arch linux.
+E preciso por isso daqui na config.
+
+```lua
+kb_variant = "intl",
+```
