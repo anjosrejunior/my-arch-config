@@ -48,3 +48,11 @@ sudo pacman -S v4l2loopback-dkms
 ```
 
 Caso va utilizar o droid cam que é uma ajuda e tanto utilizar o celular como câmera, aqui esta o link do git hub com as releases, e so baixar ele via zip e executar o arquivo `install.sh` que vem dentro do pacote: https://github.com/dev47apps/droidcam-obs-plugin/releases. Sempre busque a versão mais nova quando o assunto é arch linux.
+
+# Kitty
+
+Existe um problema comum no kitty que quando você usa ele em alguma VPS você precisa no terminal da sua máquina rodar esse comando:
+
+```bash
+kitty +kitten ssh root@SEU_IP_AQUI
+```
