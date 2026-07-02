@@ -11,13 +11,13 @@
 sudo pacman -Syu --noconfirm
 
 #---- Install terminal editor ----
-sudo pacman -S micro
+sudo pacman -S --noconfirm micro
 
 #---- Install Basic Fonts ----
-sudo pacman -S noto-fonts
+sudo pacman -S --noconfirm noto-fonts
 
 #---- Install Nerd Fonts ----
-sudo pacman -S ttf-nerd-fonts-symbols-common ttf-jetbrains-mono-nerd
+sudo pacman -S --noconfirm ttf-nerd-fonts-symbols-common ttf-jetbrains-mono-nerd
 
 ##---- Instala o Zsh ----
 sudo pacman -S --noconfirm zsh
@@ -32,12 +32,13 @@ sudo pacman -S --noconfirm starship zsh-autosuggestions zsh-syntax-highlighting 
 ##---- Adiciona as configurações no ~/.zshrc (evita duplicar se o script rodar mais de uma vez) ----
 if ! grep -q "zsh-autosuggestions.zsh" ~/.zshrc 2>/dev/null; then
 cat >> ~/.zshrc << 'EOF'
-
 # Plugins
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
 # Fuzzy Find
 source <(fzf --zsh)
+
 # Starship Prompt
 eval "$(starship init zsh)"
 EOF
@@ -48,6 +49,8 @@ chsh -s $(which zsh)
 
 echo "Zsh instalado, configurado e definido como shell padrão."
 echo "Faça logout e login novamente (ou reinicie o terminal) para a mudança ter efeito."
+
+#---- Configuração do USWM ----
 
 #---- YAY ----
 
