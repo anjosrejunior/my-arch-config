@@ -20,3 +20,9 @@ Follow the steps below after performing a clean Arch Linux installation.
 First, clone this repository into your user's home directory:
 ```bash
 git clone git@github.com:anjosrejunior/my-arch-config.git
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. Feel free to use, modify, and distribute it.
