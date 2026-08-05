@@ -190,7 +190,7 @@ hl.config({
         rounding_power = 2,
 
         -- Change transparency of focused and unfocused windows
-        active_opacity   = 0.9,
+        active_opacity   = 1.0,
         inactive_opacity = 0.7,
 
         shadow = {
@@ -212,4 +212,23 @@ hl.config({
         enabled = true,
     },
 })
+```
+
+# Firewall
+
+O firewall não tem segredo algum, o bom e velho ufw.
+
+```bash
+# 1. Instalar o UFW (Exemplo para Arch Linux / pacman)
+sudo pacman -S ufw --noconfirm
+
+# 2. Habilitar o serviço no Systemd para iniciar com o sistema
+sudo systemctl enable --now ufw.service
+
+# 3. Definir regras padrão de segurança
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# 4. Ativar o firewall
+sudo ufw --force enable
 ```
