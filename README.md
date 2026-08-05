@@ -20,6 +20,7 @@ Follow the steps below after performing a clean Arch Linux installation.
 First, clone this repository into your user's home directory:
 ```bash
 git clone git@github.com:anjosrejunior/my-arch-config.git
+```
 
 ---
 
