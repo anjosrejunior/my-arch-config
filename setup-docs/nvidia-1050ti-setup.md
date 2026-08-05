@@ -28,7 +28,7 @@ sudo pacman -S linux-lts-headers
 A GTX 1050 Ti (arquitetura Pascal) ainda possui suporte nos drivers da série 580. Em alguns cenários pode ser necessário utilizar os pacotes da série 580 disponíveis no AUR.
 
 ```bash
-sudo pacman -S libva-nvidia-driver
+sudo pacman -S libva-nvidia-driver egl-wayland
 
 # Drivers da Placa de vídeo
 yay -S nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
