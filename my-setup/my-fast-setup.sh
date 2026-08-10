@@ -1,5 +1,19 @@
 #!/bin/bash
 
+echo "=== Configuração do Perfil do Git ==="
+
+# Solicita o nome até que um valor seja digitado
+while [ -z "$GIT_NAME" ]; do
+    read -rp "Digite o seu Nome para o Git: " GIT_NAME
+    [ -z "$GIT_NAME" ] && echo "Erro: O nome não pode ficar em branco."
+done
+
+# Solicita o e-mail até que um valor seja digitado
+while [ -z "$GIT_EMAIL" ]; do
+    read -rp "Digite o seu E-mail para o Git: " GIT_EMAIL
+    [ -z "$GIT_EMAIL" ] && echo "Erro: O e-mail não pode ficar em branco."
+done
+
 # ####################################################################################
 # ///// INIT
 # ####################################################################################
@@ -50,6 +64,23 @@ echo "Zsh instalado, configurado e definido como shell padrão."
 echo "Faça logout e login novamente (ou reinicie o terminal) para a mudança ter efeito."
 
 # ####################################################################################
+# ///// FIREWALL
+# ####################################################################################
+
+# 1. Instalar o UFW (Exemplo para Arch Linux / pacman)
+sudo pacman -S ufw --noconfirm
+
+# 2. Habilitar o serviço no Systemd para iniciar com o sistema
+sudo systemctl enable --now ufw.service
+
+# 3. Definir regras padrão de segurança
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# 4. Ativar o firewall
+sudo ufw --force enable
+
+# ####################################################################################
 # ///// KEYRING
 # ####################################################################################
 
@@ -64,8 +95,13 @@ sudo pacman -S --needed --noconfirm git
 # Config GIT
 # --- CONFIGURAÇÕES BÁSICAS (OBRIGATÓRIAS) ---
 # Substitua pelos seus dados do GitHub/GitLab
-git config --global user.name "Seu Nome"
-git config --global user.email "seu.email@exemplo.com"
+git config --global user.name "$GIT_NAME"
+git config --global user.email "$GIT_EMAIL"
+
+echo ""
+echo "=== Configuração do git aplicada com sucesso! ==="
+echo "Nome:  $(git config --global user.name)"
+echo "Email: $(git config --global user.email)"
 
 # --- PREFERÊNCIAS DE BRANCH E BRANCHES REMOTAS ---
 # Define 'main' como o nome padrão para a branch principal de novos repositórios
@@ -77,10 +113,6 @@ git config --global pull.rebase true
 
 # Auto-setup de rastreamento remoto ao criar novas branches
 git config --global push.autoSetupRemote true
-
-# --- EDITOR E FERRAMENTAS ---
-# Define o VS Code como editor padrão do Git (mude para "kitty -e nvim" ou "nano" se preferir)
-git config --global core.editor "code --wait"
 
 # --- CREDENCIAIS E SEGURANÇA ---
 # Conecta o Git ao GNOME Keyring via libsecret (salva tokens com criptografia em segundo plano)
@@ -99,19 +131,25 @@ git config --global alias.c "commit -m"
 git config --global alias.l "log --oneline --graph --decorate --all"
 
 # ####################################################################################
-# ///// YAY
+# ///// YAY (AUR HELPER)
 # ####################################################################################
 
-## 1. Instala as ferramentas de compilação necessárias
+echo ""
+echo "=== Verificando e Instalando o YAY ==="
+
+# Instala ferramentas essenciais de compilação
 sudo pacman -S --needed --noconfirm base-devel
-## 2. Entra no diretório temporário
-cd /tmp
-## 3. Clona o repositório do YAY
-git clone https://aur.archlinux.org/yay.git
-## 4. Entra na pasta do YAY
-cd yay
-## 5. Compila e instala (sem o --noconfirm para garantir que o pacman instale as dependências com segurança)
-makepkg -si
+
+if ! command -v yay &> /dev/null; then
+    echo "-> YAY não encontrado. Clonando e compilando..."
+    cd /tmp
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    makepkg -si --noconfirm
+    cd ~
+else
+    echo "-> YAY já está instalado no sistema."
+fi
 
 # ####################################################################################
 # ///// FLATPAK
@@ -146,7 +184,6 @@ sudo pacman -S uwsm
 # Adiciona a inicialização do Hyprland via uwsm no ~/.zprofile (evita duplicar)
 if ! grep -q "uwsm check may-start" ~/.zprofile 2>/dev/null; then
 cat >> ~/.zprofile << 'EOF'
-
 if uwsm check may-start; then
     exec uwsm start hyprland.desktop
 fi
@@ -182,3 +219,71 @@ echo "PNPM versão: $(pnpm -v)"
 
 #---- Instalando o UV da Astral (Também faço bastantes coisas com python) ----
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
+
+# ####################################################################################
+# ///// DOCKER
+# ####################################################################################
+
+sudo pacman -S docker
+
+# O docker compose vem separado do docker engine no pacote do pacman, então é necessário instalar separadamente
+sudo pacman -S docker-compose
+
+# É necessário abilitar o docker no systemd
+sudo systemctl enable --now docker
+
+
+# ####################################################################################
+# ///// OBS STUDIO & LOOPBACK
+# ####################################################################################
+
+echo ""
+echo "=== Instalando OBS Studio ==="
+echo "-> Instalando OBS Studio e v4l2loopback (para câmera e áudio virtual)..."
+sudo pacman -S --needed --noconfirm obs-studio v4l2loopback-dkms
+
+# ####################################################################################
+# ///// THUNAR E FERRAMENTAS DE ARQUIVOS
+# ####################################################################################
+
+echo ""
+echo "=== Instalando Thunar e utilitários de arquivos ==="
+sudo pacman -S --needed --noconfirm \
+    thunar \
+    thunar-archive-plugin \
+    thunar-volman \
+    tumbler \
+    gvfs \
+    xarchiver \
+    unzip \
+    p7zip \
+    unrar \
+    tar \
+    gzip \
+    bzip2
+
+# ####################################################################################
+# ///// GOOGLE CHROME
+# ####################################################################################
+
+echo ""
+echo "=== Instalando Google Chrome via YAY ==="
+yay -S --needed --noconfirm google-chrome
+
+# ####################################################################################
+# ///// ZEN BROWSER
+# ####################################################################################
+
+echo ""
+echo "=== Fazendo Download do ZenBrowser ==="
+
+flatpak install flathub app.zen_browser.zen
+
+echo "-> Aplicando permissões e tema no Zen Browser..."
+
+SHARED_DIR="$HOME/flatpaks-share"
+mkdir -p "$SHARED_DIR"
+
+sudo flatpak override --env=GTK_THEME=Materia-dark app.zen_browser.zen
+sudo flatpak override --filesystem="$SHARED_DIR" app.zen_browser.zen
