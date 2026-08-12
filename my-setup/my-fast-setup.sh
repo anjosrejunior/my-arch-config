@@ -191,6 +191,22 @@ EOF
 fi
 
 # ####################################################################################
+# ///// DARK THEME
+# ####################################################################################
+
+# As configurações necessários para aplicar to tema no sistema estão no hyprland.lua
+
+sudo pacman -S materia-gtk-theme
+
+sudo pacman -S qt5ct qt6ct kvantum
+
+# ####################################################################################
+# ///// AUDIO
+# ####################################################################################
+
+sudo pacman -S pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
+
+# ####################################################################################
 # ///// NODE
 # ####################################################################################
 
@@ -230,9 +246,13 @@ sudo pacman -S docker
 # O docker compose vem separado do docker engine no pacote do pacman, então é necessário instalar separadamente
 sudo pacman -S docker-compose
 
+# O buildx também vem em outro pacote separado do docker principal
+sudo pacman -S docker-buildx
+
 # É necessário abilitar o docker no systemd
 sudo systemctl enable --now docker
 
+sudo usermod -aG docker $USER
 
 # ####################################################################################
 # ///// OBS STUDIO & LOOPBACK
