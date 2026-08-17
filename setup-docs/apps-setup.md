@@ -80,3 +80,34 @@ comando:
 ```bash
 kitty +kitten ssh root@SEU_IP_AQUI
 ```
+
+# Anki
+
+Instalar o Anki é so ter um descompactador qualquer e seguir o tutorial que vem na própria wiki
+
+Para que eu consiga ter um backup do meu anki rodando direto para o meu google drive, e uma facilidade melhor para encontrar a pasta do anki eu coloco no perfil do meu zshell uma variável de ambiente para o anki.
+
+```bash
+export ANKI_BASE="/home/ghost/anki/"
+```
+
+Mas caso queira fazer o anki abrir corretamente com qualquer launcher de aplicativos você deve alterar o desktop entry, no caso o arquivo ".desktop":
+
+```bash
+[Desktop Entry]
+Name=Anki
+Comment=An intelligent spaced-repetition memory training program
+GenericName=Flashcards
+Exec=anki --base "/home/SEU-NOME-DE-USUARIO/anki/" %f
+TryExec=anki
+Icon=anki
+Categories=Education;Languages;KDE;Qt;
+Terminal=false
+Type=Application
+Version=1.0
+MimeType=application/x-colpkg;application/x-apkg;application/x-anki;application/x-ankiaddon;application/vnd.anki;
+#should be removed eventually as it was upstreamed as to be an XDG specification called SingleMainWindow
+X-GNOME-SingleWindow=true
+SingleMainWindow=true
+StartupWMClass=anki
+```
