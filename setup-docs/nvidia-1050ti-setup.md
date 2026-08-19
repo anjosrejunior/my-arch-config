@@ -1,9 +1,12 @@
 # Wiki
 
 Caso tenha dúvidas: 
-1. Hyprland Master Tutorial: https://wiki.hypr.land/Getting-Started/Master-Tutorial/
-2. Nvidia Hyprland (Para as placas da Nvidia funcionarem corretamente no Hyprland são necessários alguns passos a mais.): https://wiki.hypr.land/Nvidia/
-3. Wiki do Arch Linux: https://wiki.archlinux.org/title/NVIDIA#Unsupported_drivers.
+1. Hyprland Master Tutorial: https://wiki.hypr.land/Getting-Started
+Master-Tutorial/
+2. Nvidia Hyprland (Para as placas da Nvidia funcionarem corretamente no
+Hyprland são necessários alguns passos a mais.): https://wiki.hypr.land/Nvidia/
+3. Wiki do Arch Linux: https://wiki.archlinux.org/title
+NVIDIA#Unsupported_drivers.
 
 # Base necessária
 
@@ -25,7 +28,9 @@ sudo pacman -S linux-lts-headers
 
 ## 1. Instalar Drivers
 
-A GTX 1050 Ti (arquitetura Pascal) ainda possui suporte nos drivers da série 580. Em alguns cenários pode ser necessário utilizar os pacotes da série 580 disponíveis no AUR.
+A GTX 1050 Ti (arquitetura Pascal) ainda possui suporte nos drivers da série
+580. Em alguns cenários pode ser necessário utilizar os pacotes da série 580
+disponíveis no AUR.
 
 ```bash
 sudo pacman -S libva-nvidia-driver egl-wayland
@@ -64,7 +69,8 @@ hl.env("MOZ_ENABLE_WAYLAND", "1")
 ```
 
 ## 3. Configurar DRM KMS (Initramfs)
-Isso garante que o Arch carregue os drivers da NVIDIA logo no primeiro segundo do boot, evitando telas pretas antes do Hyprland iniciar.
+Isso garante que o Arch carregue os drivers da NVIDIA logo no primeiro segundo
+do boot, evitando telas pretas antes do Hyprland iniciar.
 
 1. Abra o arquivo de configuração do mkinitcpio:
 
@@ -72,7 +78,8 @@ Isso garante que o Arch carregue os drivers da NVIDIA logo no primeiro segundo d
 sudo micro /etc/mkinitcpio.conf
 ```
 
-2. Procure pela linha que começa com MODULES=() e adicione os drivers lá dentro. Deve ficar assim:
+2. Procure pela linha que começa com MODULES=() e adicione os drivers lá
+dentro. Deve ficar assim:
 ```text
 MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
 ```
@@ -101,7 +108,8 @@ cat /sys/module/nvidia_drm/parameters/modeset
 Se não aparecer "Y", o Hyprland provavelmente não iniciará corretamente.
 
 ## 4. Variáveis no grub
-Precisamos dizer ao sistema para carregar o modo de vídeo da NVIDIA e aplicar o ajuste do firmware que desativa as funções problemáticas.
+Precisamos dizer ao sistema para carregar o modo de vídeo da NVIDIA e aplicar
+o ajuste do firmware que desativa as funções problemáticas.
 
 Abra o arquivo do GRUB:
 
@@ -109,14 +117,17 @@ Abra o arquivo do GRUB:
 sudo micro /etc/default/grub
 ```
 
-1. Procure pela linha `GRUB_CMDLINE_LINUX_DEFAULT` e adicione os parâmetros `nvidia-drm.modeset=1 nvidia.NVreg_EnableGpuFirmware=0` dentro das aspas. Ela deve ficar parecida com isso:
+1. Procure pela linha `GRUB_CMDLINE_LINUX_DEFAULT` e adicione os parâmetros
+`nvidia-drm.modeset=1 nvidia.NVreg_EnableGpuFirmware=0` dentro das aspas. Ela
+deve ficar parecida com isso (Essa opção é a que eu uso no meu pc):
 ```text
 GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet nvidia_drm.modeset=1"
 ```
 
 ```text
 # Opcional para algumas GPUs modernas
-GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet nvidia_drm.modeset=1 nvidia.NVreg_EnableGpuFirmware=0"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet nvidia_drm.modeset=1 nvidia
+NVreg_EnableGpuFirmware=0"
 ```
 
 2. Salve o arquivo (no Micro: Pressione Ctrl + S).
