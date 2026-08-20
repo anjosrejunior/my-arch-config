@@ -89,6 +89,16 @@ sudo ufw default allow outgoing
 sudo ufw --force enable
 
 # ####################################################################################
+# ///// NETWORK
+# ####################################################################################
+
+# NETWORK MANAGER - GERENCIADOR DE REDE + SUPORTE WIREGUARD/VPN + APPLET
+sudo pacman -S --needed --noconfirm networkmanager wireguard-tools
+
+# ATIVAR E INICIAR O SERVIÇO DO NETWORK MANAGER
+sudo systemctl enable --now NetworkManager
+
+# ####################################################################################
 # ///// KEYRING
 # ####################################################################################
 
