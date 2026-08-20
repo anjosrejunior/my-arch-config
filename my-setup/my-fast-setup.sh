@@ -197,7 +197,12 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 sudo pacman -S --noconfirm hyprland kitty
 
 ## 2. Install necessary packages
-sudo pacman -S --noconfirm mesa lib32-mesa xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-utils linux-headers linux-lts-headers
+sudo pacman -S --noconfirm mesa \
+    lib32-mesa \
+    xdg-desktop-portal-hyprland \
+    xdg-desktop-portal-gtk xdg-utils \
+    linux-headers \
+    linux-lts-headers
 
 # ####################################################################################
 # ///// UWSM
@@ -215,10 +220,44 @@ EOF
 fi
 
 # ####################################################################################
-# ///// GERENCIADOR DE LOGIN
+# ///// GERENCIADOR DE LOGIN - GREETD + TUIGREET
 # ####################################################################################
 
+## 1. Install required packages
+sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
 
+## 2. Configure greetd
+sudo tee /etc/greetd/config.toml > /dev/null << 'EOF'
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --time --remember --asterisks --sessions /usr/share/wayland-sessions --cmd 'uwsm start hyprland.desktop'"
+user = "greeter"
+EOF
+
+## 3. Set greeter permissions and cache folder
+sudo usermod -aG video,input greeter
+sudo mkdir -p /var/cache/tuigreet
+sudo chown -R greeter:greeter /var/cache/tuigreet
+
+## 4. Configure PAM for GNOME Keyring auto-unlock
+sudo tee /etc/pam.d/greetd > /dev/null << 'EOF'
+#%PAM-1.0
+
+auth       required     pam_securetty.so
+auth       requisite    pam_nologin.so
+auth       include      system-local-login
+auth       optional     pam_gnome_keyring.so
+
+account    include      system-local-login
+
+session    include      system-local-login
+session    optional     pam_gnome_keyring.so auto_start
+EOF
+
+## 5. Enable greetd service
+sudo systemctl enable greetd
 
 # ####################################################################################
 # ///// NVIDIA DRIVERS
@@ -381,6 +420,12 @@ sudo pacman -S --needed --noconfirm mpv ffmpeg
 sudo pacman -S --needed --noconfirm feh
 
 # ####################################################################################
+# ///// RCLONE
+# ####################################################################################
+
+sudo pacman -S --needed --noconfirm rclone
+
+# ####################################################################################
 # ///// NAVEGADORES
 # ####################################################################################
 
@@ -400,20 +445,46 @@ sudo flatpak override --env=GTK_THEME=Materia-dark app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" com.google.Chrome
 
-# ####################################################################################
-# ///// APLICATIVOS
-# ####################################################################################
+####################################################################################
+# ///// DBEAVER
+####################################################################################
 
 echo ""
-echo "=== Instalando aplicativos via Flatpak ==="
+echo "=== Instalando DBeaver Community via Flatpak ==="
 flatpak install --assumeyes flathub io.dbeaver.DBeaverCommunity
-flatpak install --assumeyes flathub com.discordapp.Discord
-flatpak install --assumeyes flathub com.spotify.Client
-flatpak install --assumeyes flathub net.ankiweb.Anki
-flatpak install --assumeyes flathub md.obsidian.Obsidian
 
-# Baixar o RCLONE
-sudo pacman -S --needed --noconfirm rclone
+####################################################################################
+# ///// DISCORD
+####################################################################################
+
+echo ""
+echo "=== Instalando Discord via Flatpak ==="
+flatpak install --assumeyes flathub com.discordapp.Discord
+
+####################################################################################
+# ///// SPOTIFY
+####################################################################################
+
+echo ""
+echo "=== Instalando Spotify via Flatpak ==="
+flatpak install --assumeyes flathub com.spotify.Client
+
+####################################################################################
+# ///// ANKI
+####################################################################################
+
+echo ""
+echo "=== Instalando Anki via Flatpak ==="
+flatpak install --assumeyes flathub net.ankiweb.Anki
+
+####################################################################################
+# ///// OBSIDIAN
+####################################################################################
+
+echo ""
+echo "=== Instalando Obsidian via Flatpak ==="
+flatpak install --assumeyes flathub md.obsidian.Obsidian
+mkdir -p "$HOME/documents/ocarina-of-time/"
 
 echo ""
 echo "=== Configuração concluída! ==="

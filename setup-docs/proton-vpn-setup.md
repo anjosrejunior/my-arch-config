@@ -4,7 +4,6 @@
 
 ```bash
 sudo pacman -S wireguard-tools openresolv
-
 ```
 
 **3. Baixar o perfil `.conf**`
@@ -17,14 +16,12 @@ sudo pacman -S wireguard-tools openresolv
 ```bash
 sudo cp ~/Downloads/*.conf /etc/wireguard/proton.conf
 sudo chmod 600 /etc/wireguard/proton.conf
-
 ```
 
 **3. Corrigir permissão de DNS (Se necessário)**
 
 ```bash
 sudo resolvconf -u
-
 ```
 
 *(Se o erro persistir: `sudo rm -f /etc/resolv.conf && sudo touch /etc/resolv.conf`)*
@@ -42,14 +39,12 @@ sudo resolvconf -u
 
 ```bash
 sudo pacman -S networkmanager wireguard-tools
-
 ```
 
 **2. Ativar e iniciar o serviço do NetworkManager**
 
 ```bash
 sudo systemctl enable --now NetworkManager
-
 ```
 
 **3. Baixar o perfil `.conf`**
@@ -62,7 +57,6 @@ sudo systemctl enable --now NetworkManager
 ```bash
 cd ~/Downloads
 sudo nmcli connection import type wireguard file *.conf
-
 ```
 
 **Comandos do Dia a Dia:**
