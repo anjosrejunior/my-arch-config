@@ -1,4 +1,12 @@
 #!/bin/bash
+set -e
+
+# Pré-autentica o sudo para evitar prompts de senha espalhados durante a execução
+sudo -v
+
+# ####################################################################################
+# ///// GIT
+# ####################################################################################
 
 echo "=== Configuração do Perfil do Git ==="
 
@@ -87,7 +95,7 @@ sudo ufw --force enable
 sudo pacman -S gnome-keyring libsecret --noconfirm
 
 # ####################################################################################
-# ///// GIT
+# ///// GIT CONFIG
 # ####################################################################################
 
 sudo pacman -S --needed --noconfirm git
@@ -118,7 +126,7 @@ git config --global push.autoSetupRemote true
 # Conecta o Git ao GNOME Keyring via libsecret (salva tokens com criptografia em segundo plano)
 git config --global credential.helper libsecret
 
-# --- MELHORIAS VISUAIS E UTILITÁRIAS ---
+# --- MELHORIAS VISUAIS E UTILITÁRIOS ---
 # Ativa cores na saída do terminal
 git config --global color.ui auto
 
@@ -165,9 +173,6 @@ sudo pacman -Syu --noconfirm flatpak
 echo "-> Adicionando o repositório Flathub..."
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-echo ""
-echo "=== Configuração concluída! ==="
-
 # ####################################################################################
 # ///// HYPRLAND
 # ####################################################################################
@@ -176,10 +181,10 @@ echo "=== Configuração concluída! ==="
 sudo pacman -S --noconfirm hyprland kitty
 
 ## 2. Install necessary packages
-sudo pacman -S --noconfirm mesa lib32-mesa xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-utils egl-wayland linux-headers linux-lts-headers
+sudo pacman -S --noconfirm mesa lib32-mesa xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-utils linux-headers linux-lts-headers
 
 #---- Configuração do USWM ----
-sudo pacman -S uwsm
+sudo pacman -S --needed --noconfirm uwsm
 
 # Adiciona a inicialização do Hyprland via uwsm no ~/.zprofile (evita duplicar)
 if ! grep -q "uwsm check may-start" ~/.zprofile 2>/dev/null; then
@@ -191,20 +196,28 @@ EOF
 fi
 
 # ####################################################################################
+# ///// NVIDIA DRIVERS
+# ####################################################################################
+
+sudo pacman -S --needed --noconfirm libva-nvidia-driver egl-wayland
+
+yay -S --noconfirm nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
+
+# ####################################################################################
 # ///// DARK THEME
 # ####################################################################################
 
 # As configurações necessários para aplicar to tema no sistema estão no hyprland.lua
 
-sudo pacman -S materia-gtk-theme
+sudo pacman -S --needed --noconfirm materia-gtk-theme
 
-sudo pacman -S qt5ct qt6ct kvantum
+sudo pacman -S --needed --noconfirm qt5ct qt6ct kvantum
 
 # ####################################################################################
 # ///// AUDIO
 # ####################################################################################
 
-sudo pacman -S pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
+sudo pacman -S --needed --noconfirm pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
 
 # ####################################################################################
 # ///// NODE
@@ -236,18 +249,17 @@ echo "PNPM versão: $(pnpm -v)"
 #---- Instalando o UV da Astral (Também faço bastantes coisas com python) ----
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-
 # ####################################################################################
 # ///// DOCKER
 # ####################################################################################
 
-sudo pacman -S docker
+sudo pacman -S --needed --noconfirm docker
 
 # O docker compose vem separado do docker engine no pacote do pacman, então é necessário instalar separadamente
-sudo pacman -S docker-compose
+sudo pacman -S --needed --noconfirm docker-compose
 
 # O buildx também vem em outro pacote separado do docker principal
-sudo pacman -S docker-buildx
+sudo pacman -S --needed --noconfirm docker-buildx
 
 # É necessário abilitar o docker no systemd
 sudo systemctl enable --now docker
@@ -284,26 +296,48 @@ sudo pacman -S --needed --noconfirm \
     bzip2
 
 # ####################################################################################
-# ///// GOOGLE CHROME
+# ///// VISUALIZADORES
+# ####################################################################################
+
+# MPV - VIDEO VIEWER + FFMPEG
+sudo pacman -S --needed --noconfirm mpv ffmpeg
+
+# FEH - IMAGE VIEWER
+sudo pacman -S --needed --noconfirm feh
+
+# ####################################################################################
+# ///// NAVEGADORES
 # ####################################################################################
 
 echo ""
-echo "=== Instalando Google Chrome via YAY ==="
-yay -S --needed --noconfirm google-chrome
-
-# ####################################################################################
-# ///// ZEN BROWSER
-# ####################################################################################
+echo "=== Instalando Google Chrome via Flatpak ==="
+flatpak install --assumeyes flathub com.google.Chrome
 
 echo ""
-echo "=== Fazendo Download do ZenBrowser ==="
-
-flatpak install flathub app.zen_browser.zen
+echo "=== Instalando Zen Browser via Flatpak ==="
+flatpak install --assumeyes flathub app.zen_browser.zen
 
 echo "-> Aplicando permissões e tema no Zen Browser..."
-
 SHARED_DIR="$HOME/flatpaks-share"
 mkdir -p "$SHARED_DIR"
 
 sudo flatpak override --env=GTK_THEME=Materia-dark app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" app.zen_browser.zen
+
+# ####################################################################################
+# ///// APLICATIVOS
+# ####################################################################################
+
+echo ""
+echo "=== Instalando aplicativos via Flatpak ==="
+flatpak install --assumeyes flathub io.dbeaver.DBeaverCommunity
+flatpak install --assumeyes flathub com.discordapp.Discord
+flatpak install --assumeyes flathub com.spotify.Client
+flatpak install --assumeyes flathub net.ankiweb.Anki
+flatpak install --assumeyes flathub md.obsidian.Obsidian
+
+# Baixar o RCLONE
+sudo pacman -S --needed --noconfirm rclone
+
+echo ""
+echo "=== Configuração concluída! ==="
