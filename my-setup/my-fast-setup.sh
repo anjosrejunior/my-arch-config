@@ -89,6 +89,12 @@ sudo ufw default allow outgoing
 sudo ufw --force enable
 
 # ####################################################################################
+# ///// SYSTEM MONITOR
+# ####################################################################################
+
+sudo pacman -S --needed --noconfirm btop
+
+# ####################################################################################
 # ///// NETWORK
 # ####################################################################################
 
@@ -193,7 +199,10 @@ sudo pacman -S --noconfirm hyprland kitty
 ## 2. Install necessary packages
 sudo pacman -S --noconfirm mesa lib32-mesa xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-utils linux-headers linux-lts-headers
 
-#---- Configuração do USWM ----
+# ####################################################################################
+# ///// UWSM
+# ####################################################################################
+
 sudo pacman -S --needed --noconfirm uwsm
 
 # Adiciona a inicialização do Hyprland via uwsm no ~/.zprofile (evita duplicar)
@@ -204,6 +213,12 @@ if uwsm check may-start; then
 fi
 EOF
 fi
+
+# ####################################################################################
+# ///// GERENCIADOR DE LOGIN
+# ####################################################################################
+
+
 
 # ####################################################################################
 # ///// NVIDIA DRIVERS
@@ -224,10 +239,60 @@ sudo pacman -S --needed --noconfirm materia-gtk-theme
 sudo pacman -S --needed --noconfirm qt5ct qt6ct kvantum
 
 # ####################################################################################
+# ///// WALLPAPER
+# ####################################################################################
+
+#!/usr/bin/env bash
+
+# 1. Obtém o diretório exato onde este script está localizado
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 2. Instalação do hyprpaper
+sudo pacman -S --needed --noconfirm hyprpaper
+
+# 3. Criação dos diretórios (o -p evita erros se já existirem)
+mkdir -p "$HOME/wallpapers"
+mkdir -p "$HOME/.config/hypr"
+
+# 4. Copia a imagem wallpaper.jpg local para a pasta ~/wallpapers/
+if [ -f "$SCRIPT_DIR/wallpaper.jpg" ]; then
+    cp "$SCRIPT_DIR/wallpaper.jpg" "$HOME/wallpapers/wallpaper.jpg"
+    echo "Imagem wallpaper.jpg copiada para $HOME/wallpapers/"
+else
+    echo "Aviso: wallpaper.jpg não foi encontrado no mesmo diretório do script."
+fi
+
+# 5. Copia e SOBRESCREVE o arquivo hyprpaper.conf local em ~/.config/hypr/
+TARGET_CONFIG="$HOME/.config/hypr/hyprpaper.conf"
+SOURCE_CONFIG="$SCRIPT_DIR/hyprpaper.conf"
+
+if [ -f "$SOURCE_CONFIG" ]; then
+    cp "$SOURCE_CONFIG" "$TARGET_CONFIG"
+    echo "Arquivo $TARGET_CONFIG atualizado/sobrescrito com sucesso."
+else
+    echo "Erro: O arquivo hyprpaper.conf não foi encontrado no mesmo diretório do script."
+fi
+
+# 6. Ativação e inicialização do serviço via Systemd/UWSM
+systemctl --user enable --now hyprpaper.service
+
+# ####################################################################################
 # ///// AUDIO
 # ####################################################################################
 
-sudo pacman -S --needed --noconfirm pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pavucontrol
+sudo pacman -S --needed --noconfirm \
+    pipewire \
+    pipewire-alsa \
+    pipewire-pulse \
+    pipewire-jack \
+    wireplumber \
+    pavucontrol
+
+# ####################################################################################
+# ///// CLIPBOARD
+# ####################################################################################
+
+sudo pacman -S --needed --noconfirm wl-clipboard grim slurp
 
 # ####################################################################################
 # ///// NODE
@@ -333,6 +398,7 @@ mkdir -p "$SHARED_DIR"
 
 sudo flatpak override --env=GTK_THEME=Materia-dark app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" app.zen_browser.zen
+sudo flatpak override --filesystem="$SHARED_DIR" com.google.Chrome
 
 # ####################################################################################
 # ///// APLICATIVOS
