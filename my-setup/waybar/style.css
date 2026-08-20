@@ -1,0 +1,85 @@
+/* Configurações Globais */
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font", Roboto, sans-serif;
+    font-size: 13px;
+    min-height: 0;
+}
+
+/* Fundo da Waybar - Preto Absoluto */
+window#waybar {
+    background-color: #000000;
+    color: #f7d83b;
+    transition-property: background-color;
+    transition-duration: .5s;
+}
+
+/* Workspaces */
+#workspaces button {
+    padding: 0 8px;
+    background-color: transparent;
+    color: #666666;
+    transition: all 0.2s ease;
+}
+
+/* Workspace Ativo com Amarelo do Hyprland */
+#workspaces button.active {
+    color: #f7d83b;
+    border-bottom: 2px solid #f7d83b;
+    font-weight: bold;
+}
+
+#workspaces button.urgent {
+    color: #ff5555;
+}
+
+#workspaces button:hover {
+    color: #f7d83b;
+    background-color: rgba(247, 216, 59, 0.1);
+}
+
+/* Título da janela focada */
+#window {
+    color: #f7d83b;
+    font-weight: bold;
+    padding: 0 10px;
+}
+
+/* Blocos sem bordas - Fundo escuro com letras/ícones amarelos */
+#clock,
+#battery,
+#cpu,
+#memory,
+#temperature,
+#network,
+#pulseaudio,
+#tray,
+#custom-power {
+    padding: 0 12px;
+    margin: 3px 3px;
+    background-color: #111111;
+    border: none;
+    border-radius: 4px;
+    color: #f7d83b; /* Letras e ícones internos em amarelo */
+}
+
+/* Relógio com borda amarela destacada */
+#clock {
+    background-color: #111111;
+    color: #f7d83b;
+    border: 1px solid #f7d83b;
+    font-weight: bold;
+}
+
+/* Botão de Desligar (Power) - Fundo amarelo com texto preto */
+#custom-power {
+    background-color: #f7d83b;
+    color: #000000;
+    font-weight: bold;
+    border: none;
+}
+
+#custom-power:hover {
+    background-color: #b89e22;
+}
