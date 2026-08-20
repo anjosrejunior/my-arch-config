@@ -190,6 +190,14 @@ echo "-> Adicionando o repositório Flathub..."
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # ####################################################################################
+# ///// NVIDIA DRIVERS
+# ####################################################################################
+
+sudo pacman -S --needed --noconfirm libva-nvidia-driver egl-wayland
+
+yay -S --noconfirm nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
+
+# ####################################################################################
 # ///// HYPRLAND
 # ####################################################################################
 
@@ -260,12 +268,56 @@ EOF
 sudo systemctl enable greetd
 
 # ####################################################################################
-# ///// NVIDIA DRIVERS
+# ///// LOCK SCREEN & SUPENSÃO DE SISTEMA
 # ####################################################################################
 
-sudo pacman -S --needed --noconfirm libva-nvidia-driver egl-wayland
+# EM BREVE...
 
-yay -S --noconfirm nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
+# ####################################################################################
+# ///// WAYBAR
+# ####################################################################################
+
+echo "==> Instalando Waybar..."
+sudo pacman -S --needed --noconfirm waybar
+
+# Define os caminhos de origem e destino
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WAYBAR_SRC_DIR="$SCRIPT_DIR/waybar"
+WAYBAR_DST_DIR="$HOME/.config/waybar"
+
+# Garante que a pasta de destino exista
+mkdir -p "$WAYBAR_DST_DIR"
+
+# Checa se o diretório local ./waybar existe antes de prosseguir
+if [ -d "$WAYBAR_SRC_DIR" ]; then
+
+    # Checa e copia o arquivo config.jsonc
+    if [ -f "$WAYBAR_SRC_DIR/config.jsonc" ]; then
+        cp "$WAYBAR_SRC_DIR/config.jsonc" "$WAYBAR_DST_DIR/config.jsonc"
+        echo "Arquivo $WAYBAR_DST_DIR/config.jsonc atualizado/sobrescrito com sucesso."
+    else
+        echo "Aviso: config.jsonc não foi encontrado dentro de $WAYBAR_SRC_DIR/"
+    fi
+
+    # Checa e copia o arquivo style.css
+    if [ -f "$WAYBAR_SRC_DIR/style.css" ]; then
+        cp "$WAYBAR_SRC_DIR/style.css" "$WAYBAR_DST_DIR/style.css"
+        echo "Arquivo $WAYBAR_DST_DIR/style.css atualizado/sobrescrito com sucesso."
+    else
+        echo "Aviso: style.css não foi encontrado dentro de $WAYBAR_SRC_DIR/"
+    fi
+
+else
+    echo "Erro: A pasta $WAYBAR_SRC_DIR não foi encontrada no mesmo diretório do script."
+fi
+
+systemctl --user enable waybar.service
+
+# ####################################################################################
+# ///// LAUNCHER
+# ####################################################################################
+
+# EM PRODUÇÃO ...
 
 # ####################################################################################
 # ///// DARK THEME
@@ -280,8 +332,6 @@ sudo pacman -S --needed --noconfirm qt5ct qt6ct kvantum
 # ####################################################################################
 # ///// WALLPAPER
 # ####################################################################################
-
-#!/usr/bin/env bash
 
 # 1. Obtém o diretório exato onde este script está localizado
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -303,7 +353,7 @@ fi
 
 # 5. Copia e SOBRESCREVE o arquivo hyprpaper.conf local em ~/.config/hypr/
 TARGET_CONFIG="$HOME/.config/hypr/hyprpaper.conf"
-SOURCE_CONFIG="$SCRIPT_DIR/hyprpaper.conf"
+SOURCE_CONFIG="$SCRIPT_DIR/hypr/hyprpaper.conf"
 
 if [ -f "$SOURCE_CONFIG" ]; then
     cp "$SOURCE_CONFIG" "$TARGET_CONFIG"
@@ -477,6 +527,11 @@ echo ""
 echo "=== Instalando Anki via Flatpak ==="
 flatpak install --assumeyes flathub net.ankiweb.Anki
 
+mkdir -p "$HOME/documents/anki/"
+
+flatpak override --user --filesystem="$HOME/documents/anki" net.ankiweb.Anki
+flatpak override --user --env=ANKI_BASE="$HOME/documents/anki" net.ankiweb.Anki
+
 ####################################################################################
 # ///// OBSIDIAN
 ####################################################################################
@@ -484,7 +539,10 @@ flatpak install --assumeyes flathub net.ankiweb.Anki
 echo ""
 echo "=== Instalando Obsidian via Flatpak ==="
 flatpak install --assumeyes flathub md.obsidian.Obsidian
+
 mkdir -p "$HOME/documents/ocarina-of-time/"
+
+flatpak override --user --filesystem="$HOME/documents/ocarina-of-time" net.ankiweb.Anki
 
 echo ""
 echo "=== Configuração concluída! ==="
