@@ -50,7 +50,7 @@ touch ~/.zprofile
 ##---- Instala pacotes extras (starship, autosuggestions, syntax-highlighting, fzf) ----
 sudo pacman -S --noconfirm starship zsh-autosuggestions zsh-syntax-highlighting fzf
 
-##---- Adiciona as configurações no ~/.zshrc (evita duplicar se o script rodar mais de uma vez) ----
+##---- Adiciona as configurações no ~/.zshrc (evita duplicação) ----
 if ! grep -q "zsh-autosuggestions.zsh" ~/.zshrc 2>/dev/null; then
 cat >> ~/.zshrc << 'EOF'
 # Plugins
@@ -314,10 +314,56 @@ fi
 systemctl --user enable waybar.service
 
 # ####################################################################################
-# ///// LAUNCHER
+# ///// ROFI
 # ####################################################################################
 
-# EM PRODUÇÃO ...
+# Instala o Rofi caso ainda não esteja instalado no sistema
+if ! command -v rofi &> /dev/null; then
+    echo "Instalando Rofi..."
+    sudo pacman -S --needed --noconfirm rofi
+fi
+
+# Definição dos caminhos de origem e destino
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROFI_SRC_DIR="$SCRIPT_DIR/rofi"
+ROFI_DST_DIR="$HOME/.config/rofi"
+BIN_DST_DIR="$HOME/.local/bin"
+
+# Garante que as pastas de destino existam
+mkdir -p "$ROFI_DST_DIR"
+mkdir -p "$BIN_DST_DIR"
+
+# Checa se o diretório local ./rofi existe antes de prosseguir
+if [ -d "$ROFI_SRC_DIR" ]; then
+
+    # Checa e copia o arquivo config.rasi
+    if [ -f "$ROFI_SRC_DIR/config.rasi" ]; then
+        cp "$ROFI_SRC_DIR/config.rasi" "$ROFI_DST_DIR/config.rasi"
+        echo "Arquivo $ROFI_DST_DIR/config.rasi atualizado/sobrescrito com sucesso."
+    else
+        echo "Aviso: config.rasi não foi encontrado dentro de $ROFI_SRC_DIR/"
+    fi
+
+    # Checa e copia o arquivo powermenu.rasi
+    if [ -f "$ROFI_SRC_DIR/powermenu.rasi" ]; then
+        cp "$ROFI_SRC_DIR/powermenu.rasi" "$ROFI_DST_DIR/powermenu.rasi"
+        echo "Arquivo $ROFI_DST_DIR/powermenu.rasi atualizado/sobrescrito com sucesso."
+    else
+        echo "Aviso: powermenu.rasi não foi encontrado dentro de $ROFI_SRC_DIR/"
+    fi
+
+    # Checa, copia e dá permissão de execução ao script rofi-powermenu
+    if [ -f "$ROFI_SRC_DIR/rofi-powermenu" ]; then
+        cp "$ROFI_SRC_DIR/rofi-powermenu" "$BIN_DST_DIR/rofi-powermenu"
+        chmod +x "$BIN_DST_DIR/rofi-powermenu"
+        echo "Script $BIN_DST_DIR/rofi-powermenu atualizado e tornado executável com sucesso."
+    else
+        echo "Aviso: rofi-powermenu não foi encontrado dentro de $ROFI_SRC_DIR/"
+    fi
+
+else
+    echo "Erro: A pasta $ROFI_SRC_DIR não foi encontrada no mesmo diretório do script."
+fi
 
 # ####################################################################################
 # ///// DARK THEME
@@ -540,9 +586,39 @@ echo ""
 echo "=== Instalando Obsidian via Flatpak ==="
 flatpak install --assumeyes flathub md.obsidian.Obsidian
 
-mkdir -p "$HOME/documents/ocarina-of-time/"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BIN_DST_DIR="$HOME/.local/bin"
 
-flatpak override --user --filesystem="$HOME/documents/ocarina-of-time" net.ankiweb.Anki
+# Cria diretórios necessários
+mkdir -p "$HOME/documents/ocarina-of-time/"
+mkdir -p "$HOME/scripts/"
+mkdir -p "$HOME/.config/systemd/user"
+mkdir -p "$BIN_DST_DIR"
+
+# Concede permissão de acesso à pasta do Vault no Flatpak
+flatpak override --user --filesystem="$HOME/documents/ocarina-of-time" md.obsidian.Obsidian
+
+# Copia o script de sincronização do Rclone
+if [ -f "$SCRIPT_DIR/obsidian-rclone/sync-obsidian" ]; then
+    cp "$SCRIPT_DIR/obsidian-rclone/sync-obsidian" "$BIN_DST_DIR/sync-obsidian"
+    chmod +x "$BIN_DST_DIR/sync-obsidian"
+    echo "Script de sync do obsidian copiado e configurado em: $BIN_DST_DIR/sync-obsidian"
+else
+    echo "Aviso: O script 'sync-obsidian' não foi encontrado no diretório do instalador."
+fi
+
+# Copia o serviço de usuário do systemd para o UWSM
+if [ -f "$SCRIPT_DIR/obsidian-rclone/obsidian-sync.service" ]; then
+    cp "$SCRIPT_DIR/obsidian-rclone/obsidian-sync.service" "$HOME/.config/systemd/user/obsidian-sync.service"
+    echo "Serviço systemd copiado com sucesso para: $HOME/.config/systemd/user/obsidian-sync.service"
+else
+    echo "Aviso: O arquivo 'obsidian-sync.service' não foi encontrado no diretório do instalador."
+fi
+
+# Recarrega o daemon de usuário do systemd e ativa o serviço
+echo "=== Ativando o serviço no SystemD (UWSM) ==="
+systemctl --user daemon-reload
+systemctl --user enable --now obsidian-sync.service
 
 echo ""
 echo "=== Configuração concluída! ==="

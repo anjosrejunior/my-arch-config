@@ -1,0 +1,97 @@
+configuration {
+    modi: "drun,run";
+    show-icons: true;
+    icon-theme: "Papirus";
+    font: "JetBrainsMono Nerd Font 10";
+    drun-display-format: "{icon} {name}";
+}
+
+* {
+    /* Cores fiéis à sua Waybar */
+    bg:            #000000; /* Preto absoluto */
+    bg-alt:        #111111; /* Cinza bem escuro */
+    fg:            #f7d83b; /* Amarelo de destaque */
+    fg-unselected: #a8a8a8; /* Cinza suave */
+    fg-muted:      #666666; /* Cinza para placeholder */
+    accent:        #f7d83b; /* Amarelo principal */
+    
+    background-color: transparent;
+    text-color:       @fg-unselected;
+    br:    1px;
+}
+
+window {
+    background-color: @bg;
+    border:           1px;
+    border-color:     @accent;
+    border-radius:    @br;
+    width:            35%;
+    padding:          15px;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+    spacing: 0px;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border-radius:    @br;
+    padding:          8px 12px;
+    children:         [ prompt, entry ];
+    border:           none;
+}
+
+prompt {
+    text-color: @accent;
+    padding:    0 8px 0 0;
+}
+
+entry {
+    text-color:        @fg;
+    placeholder:       "search...";
+    placeholder-color: @fg-muted;
+}
+
+listview {
+    lines:        8;
+    columns:      1;
+    fixed-height: false;
+    spacing:      4px;
+    scrollbar:    false;
+
+    /* Divisória pontilhada em amarelo com espaçamento simétrico */
+    border:       1px dash 0px 0px 0px;
+    border-color: @accent;
+    padding:      12px 0px 0px 0px; /* Espaço entre a linha e o primeiro item */
+    margin:       12px 0px 0px 0px; /* Espaço entre o campo de busca e a linha */
+}
+
+/* Regra geral dos elementos */
+element {
+    padding:       8px 12px;
+    border-radius: @br;
+}
+
+/* Fundo cinza escuro (#111111) em TODAS as linhas inativas */
+element normal.normal,
+element alternate.normal {
+    background-color: @bg-alt;
+    border:           none;
+}
+
+element-text {
+    text-color: @fg-unselected;
+}
+
+/* Item Selecionado em Amarelo */
+element selected.normal,
+element selected.active {
+    background-color: @accent;
+    border:           none;
+}
+
+element-text selected {
+    text-color:  #000000;
+    font-weight: bold;
+}
