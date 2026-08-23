@@ -114,6 +114,7 @@ cd my-arch-config
 | `hyprpaper.service` | User | Wallpaper management |
 | `waybar.service` | User | Taskbar |
 | `obsidian-sync.service` | User | Obsidian sync via Rclone |
+| `obs-v4l2loopback.service` | User | OBS Virtual config Virtual Camera and Audio output and input |
 
 ## Notes
 
