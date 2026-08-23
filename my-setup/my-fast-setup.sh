@@ -375,6 +375,9 @@ sudo pacman -S --needed --noconfirm materia-gtk-theme
 
 sudo pacman -S --needed --noconfirm qt5ct qt6ct kvantum
 
+gsettings set org.gnome.desktop.interface gtk-theme 'Materia-dark'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
 # ####################################################################################
 # ///// WALLPAPER
 # ####################################################################################
@@ -475,6 +478,34 @@ sudo pacman -S --needed --noconfirm docker-buildx
 sudo systemctl enable --now docker
 
 sudo usermod -aG docker $USER
+
+# ####################################################################################
+# ///// CODE EDITOR (ZED)
+# ####################################################################################
+
+# 1. Obtém o diretório exato onde este script está localizado
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 2. Instalação do Zed via Flatpak
+flatpak install --noninteractive flathub dev.zed.Zed
+
+# 3. Define o diretório de destino das configurações no sandbox do Flatpak
+ZED_CONFIG_DIR="$HOME/.var/app/dev.zed.Zed/config/zed"
+
+# 4. Verifica se a pasta do Zed no Flatpak pré-existe
+if [ -d "$ZED_CONFIG_DIR" ]; then
+    SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
+    TARGET_ZED_SETTINGS="$ZED_CONFIG_DIR/settings.json"
+
+    if [ -f "$SOURCE_ZED_SETTINGS" ]; then
+        cp "$SOURCE_ZED_SETTINGS" "$TARGET_ZED_SETTINGS"
+        echo "Configuração do Zed ($TARGET_ZED_SETTINGS) atualizada com sucesso."
+    else
+        echo "Erro: O arquivo settings.json não foi encontrado em $SOURCE_ZED_SETTINGS"
+    fi
+else
+    echo "Erro: O diretório de destino $ZED_CONFIG_DIR não existe. Abra o Zed ao menos uma vez para gerar a estrutura do Flatpak."
+fi
 
 # ####################################################################################
 # ///// OBS STUDIO & LOOPBACK
