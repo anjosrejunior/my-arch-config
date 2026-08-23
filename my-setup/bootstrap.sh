@@ -15,6 +15,7 @@ NVM_VERSION="0.40.6"
 NVM_SHA256="2ef7e8d4373c1ffd70daa55f919f629e98a619543ffc0a8d892d77a5247e50e4"   # SHA-256 do install.sh do NVM; vazio = apenas exibir e prosseguir
 UV_VERSION="0.12.5"
 UV_SHA256="504511fbbbd811aeaba6738abc79408956b6c7da0ca35437b3dcc24a41efc111"    # SHA-256 do install.sh do UV; vazio = apenas exibir e prosseguir
+YAY_TAG="v12.4.3"
 
 # ---- Diretórios base (definidos uma única vez) ----
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,12 +33,17 @@ sudo -v
 ( while true; do sudo -v; sleep 50; done 2>/dev/null ) &
 SUDO_REFRESH_PID=$!
 
+# ---- Helper: verifica se o systemd --user está disponível ----
+user_systemd_ok() {
+    [ -d "/run/user/$(id -u)/systemd" ] && systemctl --user is-system-running >/dev/null 2>&1
+}
+
 cleanup() {
     if [ -n "${SUDO_REFRESH_PID:-}" ]; then
-        kill "$SUDO_REFRESH_PID" 2>/dev/null || true
+        kill -- "$SUDO_REFRESH_PID" 2>/dev/null || true
     fi
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 trap 'err "Falha na linha $LINENO (comando: $BASH_COMMAND)"' ERR
 
 # ####################################################################################
@@ -48,12 +54,22 @@ log "Configuração do Perfil do Git"
 
 while [ -z "${GIT_NAME:-}" ]; do
     read -rp "Digite o seu Nome para o Git: " GIT_NAME
-    [ -z "${GIT_NAME:-}" ] && warn "O nome não pode ficar em branco."
+    if [ -z "${GIT_NAME:-}" ]; then
+        warn "O nome não pode ficar em branco."
+    elif [[ "${GIT_NAME}" =~ [[:cntrl:]] ]]; then
+        warn "O nome contém caracteres de controle inválidos."
+        GIT_NAME=""
+    fi
 done
 
-while [ -z "${GIT_EMAIL:-}" ]; do
+while [ -z "${GIT_EMAIL:-}" ] || [[ "${GIT_EMAIL}" != *@* ]]; do
     read -rp "Digite o seu E-mail para o Git: " GIT_EMAIL
-    [ -z "${GIT_EMAIL:-}" ] && warn "O e-mail não pode ficar em branco."
+    if [ -z "${GIT_EMAIL:-}" ]; then
+        warn "O e-mail não pode ficar em branco."
+    elif [[ "${GIT_EMAIL}" != *@* ]]; then
+        warn "E-mail inválido (deve conter '@')."
+        GIT_EMAIL=""
+    fi
 done
 
 ok "Perfil do Git coletado: $GIT_NAME <$GIT_EMAIL>"
@@ -122,9 +138,12 @@ fi
 step "Definindo ZSH como shell padrão..."
 ZSH_PATH="$(command -v zsh || echo /usr/bin/zsh)"
 if grep -q "$ZSH_PATH" /etc/shells 2>/dev/null; then
-    chsh -s "$ZSH_PATH" || warn "Falha ao definir zsh como shell padrão. Tente manualmente: chsh -s $ZSH_PATH"
-    ok "ZSH definido como shell padrão."
-    warn "Faça logout/login (ou reinicie o terminal) para a mudança ter efeito."
+    if chsh -s "$ZSH_PATH"; then
+        ok "ZSH definido como shell padrão."
+        warn "Faça logout/login (ou reinicie o terminal) para a mudança ter efeito."
+    else
+        warn "Falha ao definir zsh como shell padrão. Tente manualmente: chsh -s $ZSH_PATH"
+    fi
 else
     warn "$ZSH_PATH não está em /etc/shells; shell padrão não alterado."
 fi
@@ -236,8 +255,8 @@ sudo pacman -S --needed --noconfirm base-devel
 
 if ! command -v yay &>/dev/null; then
     step "YAY não encontrado. Clonando e compilando..."
-    ( cd /tmp && rm -rf yay && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm )
-    ok "YAY instalado."
+    ( cd /tmp && rm -rf yay && git clone --branch "$YAY_TAG" --depth 1 https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm )
+    ok "YAY ${YAY_TAG} instalado."
 else
     ok "YAY já está instalado."
 fi
@@ -338,25 +357,43 @@ sudo mkdir -p /var/cache/tuigreet
 sudo chown -R greeter:greeter /var/cache/tuigreet
 
 step "Backup do PAM e configuração para auto-unlock do GNOME Keyring..."
-if [ -f /etc/pam.d/greetd ]; then
-    PAM_BACKUP="/etc/pam.d/greetd.bak.$(date +%s)"
-    sudo cp /etc/pam.d/greetd "$PAM_BACKUP"
+PAM_FILE="/etc/pam.d/greetd"
+PAM_BACKUP=""
+if [ -f "$PAM_FILE" ]; then
+    PAM_BACKUP="${PAM_FILE}.bak.$(date +%s)"
+    sudo cp "$PAM_FILE" "$PAM_BACKUP"
     ok "Backup do PAM criado: $PAM_BACKUP"
 fi
-sudo tee /etc/pam.d/greetd > /dev/null << 'EOF'
+
+# Escreve a nova configuração num arquivo temporário e valida a sintaxe básica antes de aplicar.
+PAM_TMP="$(mktemp)"
+cat > "$PAM_TMP" << 'EOF'
 #%PAM-1.0
 
-auth       required     pam_securetty.so
-auth       requisite    pam_nologin.so
+auth       required     pam_nologin.so
 auth       include      system-local-login
 auth       optional     pam_gnome_keyring.so
 
 account    include      system-local-login
 
 session    include      system-local-login
-session    optional      pam_gnome_keyring.so auto_start
+session    optional     pam_gnome_keyring.so auto_start
 EOF
-ok "PAM configurado para auto-unlock do GNOME Keyring."
+
+# Validação básica: cada linha não-vazia e não-comentada deve começar com um tipo de seção conhecido.
+if grep -vE '^\s*(#|$|auth|account|password|session)\b' "$PAM_TMP" | grep -vE '^\s*$' | grep -q .; then
+    err "Sintaxe PAM inválida detectada no arquivo temporário; abortando para preservar config atual."
+    rm -f "$PAM_TMP"
+    exit 1
+fi
+
+sudo install -m 644 "$PAM_TMP" "$PAM_FILE"
+rm -f "$PAM_TMP"
+if [ -n "$PAM_BACKUP" ]; then
+    ok "PAM configurado para auto-unlock do GNOME Keyring (backup em $PAM_BACKUP)."
+else
+    ok "PAM configurado para auto-unlock do GNOME Keyring."
+fi
 
 step "Habilitando serviço greetd..."
 sudo systemctl enable greetd
@@ -406,7 +443,11 @@ else
 fi
 
 step "Habilitando serviço Waybar no Systemd..."
-systemctl --user enable waybar.service || warn "Não foi possível habilitar waybar.service."
+if user_systemd_ok; then
+    systemctl --user enable waybar.service || warn "Não foi possível habilitar waybar.service."
+else
+    warn "systemd --user indisponível; waybar.service não habilitado (faça logout/login após reiniciar)."
+fi
 
 ok "Waybar configurado."
 
@@ -512,7 +553,11 @@ else
 fi
 
 step "Ativando serviço hyprpaper no Systemd..."
-systemctl --user enable --now hyprpaper.service || warn "Não foi possível habilitar hyprpaper.service."
+if user_systemd_ok; then
+    systemctl --user enable --now hyprpaper.service || warn "Não foi possível habilitar hyprpaper.service."
+else
+    warn "systemd --user indisponível; hyprpaper.service não habilitado (faça logout/login após reiniciar)."
+fi
 
 ok "Wallpaper configurado."
 
@@ -573,10 +618,16 @@ rm -f "$NVM_INSTALLER"
 
 step "Carregando NVM na sessão atual..."
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    \. "$NVM_DIR/nvm.sh"
+    ok "NVM carregado."
+else
+    err "nvm.sh não encontrado em $NVM_DIR. Instalação do NVM pode ter falhado."
+    exit 1
+fi
 
 step "Instalando Node.js 24..."
-nvm install 24
+nvm install 24 || { err "Falha ao instalar Node.js 24 via NVM."; exit 1; }
 
 step "Ativando pnpm via Corepack..."
 if command -v corepack &>/dev/null; then
@@ -587,7 +638,10 @@ else
 fi
 
 ok "Node.js instalado."
-step "Node: $(node -v) | NPM: $(npm -v) | PNPM: $(pnpm -v)"
+NODE_VER="$(node -v 2>/dev/null || echo 'N/A')"
+NPM_VER="$(npm -v 2>/dev/null || echo 'N/A')"
+PNPM_VER="$(pnpm -v 2>/dev/null || echo 'N/A')"
+step "Node: ${NODE_VER} | NPM: ${NPM_VER} | PNPM: ${PNPM_VER}"
 
 # ####################################################################################
 # ///// UV (Astral)
@@ -706,8 +760,12 @@ else
 fi
 
 step "Ativando serviço no Systemd..."
-systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
-systemctl --user enable --now obs-v4l2loopback.service || warn "Não foi possível ativar obs-v4l2loopback.service."
+if user_systemd_ok; then
+    systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
+    systemctl --user enable --now obs-v4l2loopback.service || warn "Não foi possível ativar obs-v4l2loopback.service."
+else
+    warn "systemd --user indisponível; obs-v4l2loopback.service não ativado (faça logout/login após reiniciar)."
+fi
 
 ok "OBS Studio e v4l2loopback instalados e configurados."
 
@@ -865,8 +923,12 @@ else
 fi
 
 step "Ativando serviço no Systemd..."
-systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
-systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
+if user_systemd_ok; then
+    systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
+    systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
+else
+    warn "systemd --user indisponível; obsidian-sync.service não ativado (faça logout/login após reiniciar)."
+fi
 
 ok "Obsidian instalado e sincronização configurada."
 
@@ -876,4 +938,21 @@ ok "Obsidian instalado e sincronização configurada."
 
 log "Configuração concluída!"
 
-sudo shutdown -r now
+REBOOT=""
+while true; do
+    read -rp "Reiniciar agora para aplicar as mudanças? [s/N]: " REBOOT
+    case "${REBOOT:-}" in
+        [sS]|[sS][iI][mM]|[yY]|[yY][eE][sS])
+            ok "Reiniciando o sistema..."
+            sudo shutdown -r now
+            break
+            ;;
+        [nN]|[nN][ãaÃoO]|"")
+            ok "Reinicialização adiada. Faça logout/login para aplicar as mudanças de sessão (zsh, docker, systemd --user)."
+            break
+            ;;
+        *)
+            warn "Resposta inválida. Use 's' (sim) ou 'n' (não)."
+            ;;
+    esac
+done
