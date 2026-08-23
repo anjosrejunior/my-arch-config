@@ -115,14 +115,16 @@ cd my-arch-config
 ```
 my-arch-config/
 ├── my-setup/
-│   ├── bootstrap.sh          # Main installation script
+│   ├── hypr/                     # Hyprpaper configurations (hyprpaper.conf)
+│   ├── obs/                      # Obs configurations
+│   ├── obsidian-rclone/          # Obsidian sync script and systemd service
+│   ├── post-install/             # Post Install Actions
+│   ├── rofi/                     # Rofi configurations (config.rasi, powermenu.rasi, rofi-powermenu)
+│   ├── waybar/                   # Waybar configurations (config.jsonc, style.css)
+│   ├── zed/                      # Zed configurations (settings.json)
+│   ├── bootstrap.sh              # Main installation script
 │   ├── my-arch-en.md             # English documentation
 │   ├── my-arch-pt-br.md          # Portuguese (Brazil) documentation
-│   ├── waybar/                   # Waybar configurations (config.jsonc, style.css)
-│   ├── rofi/                     # Rofi configurations (config.rasi, powermenu.rasi, rofi-powermenu)
-│   ├── hypr/                     # Hyprpaper configurations (hyprpaper.conf)
-│   ├── zed/                      # Zed configurations (settings.json)
-│   ├── obsidian-rclone/          # Obsidian sync script and systemd service
 │   └── wallpaper.jpg             # Default wallpaper
 ├── scripts                     # Scripts
 ├── setup-docs                  # Setup documentation
