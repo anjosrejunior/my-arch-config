@@ -203,6 +203,7 @@ git config --global pull.rebase true
 git config --global push.autoSetupRemote true
 git config --global color.ui auto
 git config --global core.autocrlf input
+git config --global core.editor micro
 
 step "Configurando credential helper..."
 if command -v git-credential-libsecret &>/dev/null || [ -x /usr/lib/git-core/git-credential-libsecret ]; then
@@ -285,6 +286,19 @@ sudo pacman -S --needed --noconfirm \
     linux-lts-headers
 
 ok "Hyprland e dependências instalados."
+
+step "Criando diretório de config do hyprland..."
+mkdir -p "$HOME/.config/hypr"
+
+step "Copiando hyrpland.lua..."
+HYPRLAND_SRC="$SCRIPT_DIR/hypr/hyprland.lua"
+HYPRLAND_DST="$HOME/.config/hypr/hyprland.lua"
+if [ -f "$HYPRLAND_SRC" ]; then
+    cp "$HYPRLAND_SRC" "$HYPRLAND_DST"
+    ok "hyprland.lua copiado para $HYPRLAND_DST"
+else
+    warn "hyprland.lua não encontrado em $HYPRLAND_SRC"
+fi
 
 # ####################################################################################
 # ///// UWSM
