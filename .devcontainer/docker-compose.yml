@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: .devcontainer/Dockerfile
     image: ai-jail:latest
     container_name: ai-jail-dev
     volumes:
