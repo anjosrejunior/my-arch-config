@@ -46,22 +46,22 @@ account    include      system-local-login
 
 session    include      system-local-login
 session    optional     pam_gnome_keyring.so auto_start
-
 ```
 
 > **Nota:** A senha do seu usuário no sistema precisa ser a mesma senha do cofre de senhas do GNOME Keyring.
 
 # 4. Integração no Script do Hyprland (Lua)
 
-No seu arquivo de inicialização do Hyprland (script Lua), adicione as chamadas para atualizar as variáveis de ambiente e disparar o daemon do keyring encapsulado no `uwsm
-app --`:
+No seu arquivo de inicialização do Hyprland (script Lua), adicione as chamadas para atualizar as variáveis de ambiente e disparar o daemon do keyring encapsulado no
+`uwsm app --`:
 
 ```lua
 hl.on("hyprland.start", function () 
     hl.exec_cmd("uwsm app -- gnome-keyring-daemon --start --components=secrets,ssh,pkcs11")  -- Adicione essa função de start com as outras que ja estão no seu hyprland.lua
 end)
-
 ```
+
+Nota: Se você apenas utilizar um UWSM da vida e ativar o gnome-keyring com um comando no systemd não é necessário esse script no hyprland.start (Comando: `systemctl --user enable gnome-keyring-daemon.service`)
 
 # 5. Remoção de Conflitos (`~/.zprofile` ou `~/.zshrc`)
 
@@ -88,7 +88,6 @@ Reinicie o sistema:
 
 ```bash
 sudo reboot
-
 ```
 
 O arquivo Markdown com o resumo completo do passo a passo da instalação e configuração foi criado.
