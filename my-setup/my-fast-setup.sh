@@ -62,6 +62,9 @@ source <(fzf --zsh)
 
 # Starship Prompt
 eval "$(starship init zsh)"
+
+# Alias do Zed
+alias zeditor='flatpak run dev.zed.Zed'
 EOF
 fi
 
