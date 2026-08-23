@@ -1,58 +1,101 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+# ####################################################################################
+# ///// BOOTSTRAP ARCH LINUX
+# ####################################################################################
+# Script de pós-instalação e configuração para Arch Linux + Hyprland.
+# Executa: atualização do sistema, instalação de pacotes, configuração de
+# ambiente gráfico (Hyprland/Waybar/Rofi), ferramentas de desenvolvimento
+# (Node/UV/Docker) e aplicativos via Flatpak.
+# ####################################################################################
 
-# Pré-autentica o sudo para evitar prompts de senha espalhados durante a execução
+set -Eeuo pipefail
+
+# ---- Versões e checksums de instaladores remotos (atualizar ao mudar versão) ----
+NVM_VERSION="0.40.6"
+NVM_SHA256="2ef7e8d4373c1ffd70daa55f919f629e98a619543ffc0a8d892d77a5247e50e4"   # SHA-256 do install.sh do NVM; vazio = apenas exibir e prosseguir
+UV_VERSION="0.12.5"
+UV_SHA256="504511fbbbd811aeaba6738abc79408956b6c7da0ca35437b3dcc24a41efc111"    # SHA-256 do install.sh do UV; vazio = apenas exibir e prosseguir
+
+# ---- Diretórios base (definidos uma única vez) ----
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BIN_DST_DIR="$HOME/.local/bin"
+
+# ---- Funções de saída formatada ----
+log()  { printf '\n==> %s\n' "$*"; }
+step() { printf '  -> %s\n' "$*"; }
+ok()   { printf '  [ok] %s\n' "$*"; }
+warn() { printf '  [aviso] %s\n' "$*" >&2; }
+err()  { printf '  [erro] %s\n' "$*" >&2; }
+
+# ---- Pré-autenticação do sudo + refrescador em background ----
 sudo -v
+( while true; do sudo -v; sleep 50; done 2>/dev/null ) &
+SUDO_REFRESH_PID=$!
+
+cleanup() {
+    if [ -n "${SUDO_REFRESH_PID:-}" ]; then
+        kill "$SUDO_REFRESH_PID" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT
+trap 'err "Falha na linha $LINENO (comando: $BASH_COMMAND)"' ERR
 
 # ####################################################################################
-# ///// GIT
+# ///// GIT — PERFIL DO USUÁRIO
 # ####################################################################################
 
-echo "=== Configuração do Perfil do Git ==="
+log "Configuração do Perfil do Git"
 
-# Solicita o nome até que um valor seja digitado
-while [ -z "$GIT_NAME" ]; do
+while [ -z "${GIT_NAME:-}" ]; do
     read -rp "Digite o seu Nome para o Git: " GIT_NAME
-    [ -z "$GIT_NAME" ] && echo "Erro: O nome não pode ficar em branco."
+    [ -z "${GIT_NAME:-}" ] && warn "O nome não pode ficar em branco."
 done
 
-# Solicita o e-mail até que um valor seja digitado
-while [ -z "$GIT_EMAIL" ]; do
+while [ -z "${GIT_EMAIL:-}" ]; do
     read -rp "Digite o seu E-mail para o Git: " GIT_EMAIL
-    [ -z "$GIT_EMAIL" ] && echo "Erro: O e-mail não pode ficar em branco."
+    [ -z "${GIT_EMAIL:-}" ] && warn "O e-mail não pode ficar em branco."
 done
 
+ok "Perfil do Git coletado: $GIT_NAME <$GIT_EMAIL>"
+
 # ####################################################################################
-# ///// INIT
+# ///// INIT — ATUALIZAÇÃO DO SISTEMA E PACOTES BASE
 # ####################################################################################
 
+log "Atualização do Sistema e Pacotes Base"
+
+step "Atualizando o sistema..."
 sudo pacman -Syu --noconfirm
 
-#---- Install terminal editor ----
-sudo pacman -S --noconfirm micro
+step "Instalando editor de terminal e fontes..."
+sudo pacman -S --needed --noconfirm \
+    micro \
+    noto-fonts \
+    ttf-nerd-fonts-symbols-common \
+    ttf-jetbrains-mono-nerd
 
-#---- Install Basic Fonts ----
-sudo pacman -S --noconfirm noto-fonts
-
-#---- Install Nerd Fonts ----
-sudo pacman -S --noconfirm ttf-nerd-fonts-symbols-common ttf-jetbrains-mono-nerd
+ok "Pacotes base instalados."
 
 # ####################################################################################
 # ///// ZSH
 # ####################################################################################
 
-sudo pacman -S --noconfirm zsh
+log "Configuração do ZSH"
 
-##---- Cria os arquivos de configuração ----
-touch ~/.zshrc
-touch ~/.zprofile
+step "Instalando ZSH e plugins..."
+sudo pacman -S --needed --noconfirm \
+    zsh \
+    starship \
+    zsh-autosuggestions \
+    zsh-syntax-highlighting \
+    fzf
 
-##---- Instala pacotes extras (starship, autosuggestions, syntax-highlighting, fzf) ----
-sudo pacman -S --noconfirm starship zsh-autosuggestions zsh-syntax-highlighting fzf
+step "Criando arquivos de configuração..."
+touch ~/.zshrc ~/.zprofile
 
-##---- Adiciona as configurações no ~/.zshrc (evita duplicação) ----
+step "Adicionando configurações ao ~/.zshrc..."
 if ! grep -q "zsh-autosuggestions.zsh" ~/.zshrc 2>/dev/null; then
-cat >> ~/.zshrc << 'EOF'
+    cat >> ~/.zshrc << 'EOF'
 # Plugins
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
@@ -66,178 +109,197 @@ eval "$(starship init zsh)"
 # Alias do Zed
 alias zeditor='flatpak run dev.zed.Zed'
 EOF
+    ok "Configurações adicionadas ao ~/.zshrc."
+else
+    ok "~/.zshrc já contém as configurações."
 fi
 
-##---- Define o Zsh como shell padrão do usuário atual ----
-chsh -s $(which zsh)
-
-echo "Zsh instalado, configurado e definido como shell padrão."
-echo "Faça logout e login novamente (ou reinicie o terminal) para a mudança ter efeito."
+step "Definindo ZSH como shell padrão..."
+ZSH_PATH="$(command -v zsh || echo /usr/bin/zsh)"
+if grep -q "$ZSH_PATH" /etc/shells 2>/dev/null; then
+    chsh -s "$ZSH_PATH" || warn "Falha ao definir zsh como shell padrão. Tente manualmente: chsh -s $ZSH_PATH"
+    ok "ZSH definido como shell padrão."
+    warn "Faça logout/login (ou reinicie o terminal) para a mudança ter efeito."
+else
+    warn "$ZSH_PATH não está em /etc/shells; shell padrão não alterado."
+fi
 
 # ####################################################################################
 # ///// FIREWALL
 # ####################################################################################
 
-# 1. Instalar o UFW (Exemplo para Arch Linux / pacman)
-sudo pacman -S ufw --noconfirm
+log "Configuração do Firewall (UFW)"
 
-# 2. Habilitar o serviço no Systemd para iniciar com o sistema
+step "Instalando UFW..."
+sudo pacman -S --needed --noconfirm ufw
+
+step "Habilitando serviço no Systemd..."
 sudo systemctl enable --now ufw.service
 
-# 3. Definir regras padrão de segurança
+step "Definindo regras padrão..."
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 
-# 4. Ativar o firewall
+step "Ativando firewall..."
 sudo ufw --force enable
+
+ok "Firewall configurado e ativado."
 
 # ####################################################################################
 # ///// SYSTEM MONITOR
 # ####################################################################################
 
+log "System Monitor (Btop)"
+
+step "Instalando btop..."
 sudo pacman -S --needed --noconfirm btop
+
+ok "btop instalado."
 
 # ####################################################################################
 # ///// NETWORK
 # ####################################################################################
 
-# NETWORK MANAGER - GERENCIADOR DE REDE + SUPORTE WIREGUARD/VPN + APPLET
+log "Rede (NetworkManager + WireGuard)"
+
+step "Instalando NetworkManager e WireGuard..."
 sudo pacman -S --needed --noconfirm networkmanager wireguard-tools
 
-# ATIVAR E INICIAR O SERVIÇO DO NETWORK MANAGER
+step "Ativando NetworkManager no Systemd..."
 sudo systemctl enable --now NetworkManager
+
+ok "NetworkManager configurado."
 
 # ####################################################################################
 # ///// KEYRING
 # ####################################################################################
 
-sudo pacman -S gnome-keyring libsecret --noconfirm
+log "GNOME Keyring"
+
+step "Instalando GNOME Keyring e libsecret..."
+sudo pacman -S --needed --noconfirm gnome-keyring libsecret
+
+ok "GNOME Keyring instalado."
 
 # ####################################################################################
 # ///// GIT CONFIG
 # ####################################################################################
 
+log "Configuração do Git"
+
+step "Instalando git..."
 sudo pacman -S --needed --noconfirm git
 
-# Config GIT
-# --- CONFIGURAÇÕES BÁSICAS (OBRIGATÓRIAS) ---
-# Substitua pelos seus dados do GitHub/GitLab
+step "Aplicando configurações globais..."
 git config --global user.name "$GIT_NAME"
 git config --global user.email "$GIT_EMAIL"
-
-echo ""
-echo "=== Configuração do git aplicada com sucesso! ==="
-echo "Nome:  $(git config --global user.name)"
-echo "Email: $(git config --global user.email)"
-
-# --- PREFERÊNCIAS DE BRANCH E BRANCHES REMOTAS ---
-# Define 'main' como o nome padrão para a branch principal de novos repositórios
-git config --global init.defaultBranch main
-
-# --- COMPORTAMENTO DE PULL E REBASE ---
-# Faz o 'git pull' aplicar rebase por padrão (evita commits de merge desnecessários)
+git config --global init.defaultBranch master
 git config --global pull.rebase true
-
-# Auto-setup de rastreamento remoto ao criar novas branches
 git config --global push.autoSetupRemote true
-
-# --- CREDENCIAIS E SEGURANÇA ---
-# Conecta o Git ao GNOME Keyring via libsecret (salva tokens com criptografia em segundo plano)
-git config --global credential.helper libsecret
-
-# --- MELHORIAS VISUAIS E UTILITÁRIOS ---
-# Ativa cores na saída do terminal
 git config --global color.ui auto
-
-# Converte quebras de linha de forma inteligente (Crucial para Linux)
 git config --global core.autocrlf input
 
-# --- ATALHOS (ALIASES) ÚTEIS ---
+step "Configurando credential helper..."
+if command -v git-credential-libsecret &>/dev/null || [ -x /usr/lib/git-core/git-credential-libsecret ]; then
+    git config --global credential.helper libsecret
+    ok "credential.helper definido como libsecret."
+else
+    warn "git-credential-libsecret não encontrado; credential.helper não configurado."
+fi
+
+step "Definindo aliases..."
 git config --global alias.s "status -s"
 git config --global alias.c "commit -m"
 git config --global alias.l "log --oneline --graph --decorate --all"
+
+ok "Configuração do Git aplicada com sucesso!"
+step "Nome:  $(git config --global user.name)"
+step "Email: $(git config --global user.email)"
 
 # ####################################################################################
 # ///// YAY (AUR HELPER)
 # ####################################################################################
 
-echo ""
-echo "=== Verificando e Instalando o YAY ==="
+log "YAY (AUR Helper)"
 
-# Instala ferramentas essenciais de compilação
+step "Instalando base-devel..."
 sudo pacman -S --needed --noconfirm base-devel
 
-if ! command -v yay &> /dev/null; then
-    echo "-> YAY não encontrado. Clonando e compilando..."
-    cd /tmp
-    git clone https://aur.archlinux.org/yay.git
-    cd yay
-    makepkg -si --noconfirm
-    cd ~
+if ! command -v yay &>/dev/null; then
+    step "YAY não encontrado. Clonando e compilando..."
+    ( cd /tmp && rm -rf yay && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm )
+    ok "YAY instalado."
 else
-    echo "-> YAY já está instalado no sistema."
+    ok "YAY já está instalado."
 fi
 
 # ####################################################################################
 # ///// FLATPAK
 # ####################################################################################
 
-echo "=== Configurando Flatpak ==="
+log "Flatpak"
 
-# 1. Atualiza o sistema e instala o pacote flatpak
-echo "-> Instalando o Flatpak..."
-sudo pacman -Syu --noconfirm flatpak
+step "Instalando Flatpak..."
+sudo pacman -S --needed --noconfirm flatpak
 
-# 2. Adiciona o repositório oficial do Flathub
-echo "-> Adicionando o repositório Flathub..."
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+step "Adicionando repositório Flathub..."
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || warn "Flathub já existe ou não foi possível adicionar."
+
+ok "Flatpak configurado."
 
 # ####################################################################################
 # ///// NVIDIA DRIVERS
 # ####################################################################################
 
+log "Drivers NVIDIA"
+
+step "Instalando pacotes de suporte (libva, egl-wayland)..."
 sudo pacman -S --needed --noconfirm libva-nvidia-driver egl-wayland
 
+step "Instalando drivers NVIDIA 580xx via YAY..."
 yay -S --noconfirm nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
+
+ok "Drivers NVIDIA instalados."
 
 # ####################################################################################
 # ///// HYPRLAND
 # ####################################################################################
 
-## 1. Install Hyprland
-sudo pacman -S --noconfirm hyprland kitty
+log "Hyprland"
 
-## 2. Install necessary packages
-sudo pacman -S --noconfirm mesa \
+step "Instalando Hyprland e dependências..."
+sudo pacman -S --needed --noconfirm \
+    hyprland \
+    kitty \
+    mesa \
     lib32-mesa \
     xdg-desktop-portal-hyprland \
-    xdg-desktop-portal-gtk xdg-utils \
+    xdg-desktop-portal-gtk \
+    xdg-utils \
     linux-headers \
     linux-lts-headers
+
+ok "Hyprland e dependências instalados."
 
 # ####################################################################################
 # ///// UWSM
 # ####################################################################################
 
+log "UWSM (Universal Wayland Session Manager)"
+
+step "Instalando UWSM..."
 sudo pacman -S --needed --noconfirm uwsm
 
-# Adiciona a inicialização do Hyprland via uwsm no ~/.zprofile (evita duplicar)
-if ! grep -q "uwsm check may-start" ~/.zprofile 2>/dev/null; then
-cat >> ~/.zprofile << 'EOF'
-if uwsm check may-start; then
-    exec uwsm start hyprland.desktop
-fi
-EOF
-fi
-
 # ####################################################################################
-# ///// GERENCIADOR DE LOGIN - GREETD + TUIGREET
+# ///// GERENCIADOR DE LOGIN — GREETD + TUIGREET
 # ####################################################################################
 
-## 1. Install required packages
+log "Gerenciador de Login (GreetD + Tuigreet)"
+
+step "Instalando greetd e tuigreet..."
 sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
 
-## 2. Configure greetd
+step "Configurando greetd..."
 sudo tee /etc/greetd/config.toml > /dev/null << 'EOF'
 [terminal]
 vt = 1
@@ -246,13 +308,19 @@ vt = 1
 command = "tuigreet --time --remember --asterisks --sessions /usr/share/wayland-sessions --cmd 'uwsm start hyprland.desktop'"
 user = "greeter"
 EOF
+ok "greetd configurado em /etc/greetd/config.toml."
 
-## 3. Set greeter permissions and cache folder
+step "Definindo permissões do greeter e criando cache..."
 sudo usermod -aG video,input greeter
 sudo mkdir -p /var/cache/tuigreet
 sudo chown -R greeter:greeter /var/cache/tuigreet
 
-## 4. Configure PAM for GNOME Keyring auto-unlock
+step "Backup do PAM e configuração para auto-unlock do GNOME Keyring..."
+if [ -f /etc/pam.d/greetd ]; then
+    PAM_BACKUP="/etc/pam.d/greetd.bak.$(date +%s)"
+    sudo cp /etc/pam.d/greetd "$PAM_BACKUP"
+    ok "Backup do PAM criado: $PAM_BACKUP"
+fi
 sudo tee /etc/pam.d/greetd > /dev/null << 'EOF'
 #%PAM-1.0
 
@@ -264,163 +332,172 @@ auth       optional     pam_gnome_keyring.so
 account    include      system-local-login
 
 session    include      system-local-login
-session    optional     pam_gnome_keyring.so auto_start
+session    optional      pam_gnome_keyring.so auto_start
 EOF
+ok "PAM configurado para auto-unlock do GNOME Keyring."
 
-## 5. Enable greetd service
+step "Habilitando serviço greetd..."
 sudo systemctl enable greetd
+
+ok "GreetD + Tuigreet configurados."
 
 # ####################################################################################
 # ///// LOCK SCREEN & SUPENSÃO DE SISTEMA
 # ####################################################################################
 
-# EM BREVE...
+log "Lock Screen e Suspensão de Sistema"
+warn "Seção ainda não implementada (placeholder)."
 
 # ####################################################################################
 # ///// WAYBAR
 # ####################################################################################
 
-echo "==> Instalando Waybar..."
+log "Waybar"
+
+step "Instalando Waybar..."
 sudo pacman -S --needed --noconfirm waybar
 
-# Define os caminhos de origem e destino
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WAYBAR_SRC_DIR="$SCRIPT_DIR/waybar"
 WAYBAR_DST_DIR="$HOME/.config/waybar"
 
-# Garante que a pasta de destino exista
+step "Criando diretório de destino..."
 mkdir -p "$WAYBAR_DST_DIR"
 
-# Checa se o diretório local ./waybar existe antes de prosseguir
 if [ -d "$WAYBAR_SRC_DIR" ]; then
+    step "Copiando configurações do Waybar..."
 
-    # Checa e copia o arquivo config.jsonc
     if [ -f "$WAYBAR_SRC_DIR/config.jsonc" ]; then
         cp "$WAYBAR_SRC_DIR/config.jsonc" "$WAYBAR_DST_DIR/config.jsonc"
-        echo "Arquivo $WAYBAR_DST_DIR/config.jsonc atualizado/sobrescrito com sucesso."
+        ok "config.jsonc copiado para $WAYBAR_DST_DIR/"
     else
-        echo "Aviso: config.jsonc não foi encontrado dentro de $WAYBAR_SRC_DIR/"
+        warn "config.jsonc não encontrado em $WAYBAR_SRC_DIR/"
     fi
 
-    # Checa e copia o arquivo style.css
     if [ -f "$WAYBAR_SRC_DIR/style.css" ]; then
         cp "$WAYBAR_SRC_DIR/style.css" "$WAYBAR_DST_DIR/style.css"
-        echo "Arquivo $WAYBAR_DST_DIR/style.css atualizado/sobrescrito com sucesso."
+        ok "style.css copiado para $WAYBAR_DST_DIR/"
     else
-        echo "Aviso: style.css não foi encontrado dentro de $WAYBAR_SRC_DIR/"
+        warn "style.css não encontrado em $WAYBAR_SRC_DIR/"
     fi
-
 else
-    echo "Erro: A pasta $WAYBAR_SRC_DIR não foi encontrada no mesmo diretório do script."
+    warn "Diretório $WAYBAR_SRC_DIR/ não encontrado; configurações do Waybar não copiadas."
 fi
 
-systemctl --user enable waybar.service
+step "Habilitando serviço Waybar no Systemd..."
+systemctl --user enable waybar.service || warn "Não foi possível habilitar waybar.service."
+
+ok "Waybar configurado."
 
 # ####################################################################################
 # ///// ROFI
 # ####################################################################################
 
-# Instala o Rofi caso ainda não esteja instalado no sistema
-if ! command -v rofi &> /dev/null; then
-    echo "Instalando Rofi..."
+log "Rofi"
+
+step "Instalando Rofi..."
+if ! command -v rofi &>/dev/null; then
     sudo pacman -S --needed --noconfirm rofi
 fi
 
-# Definição dos caminhos de origem e destino
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROFI_SRC_DIR="$SCRIPT_DIR/rofi"
 ROFI_DST_DIR="$HOME/.config/rofi"
-BIN_DST_DIR="$HOME/.local/bin"
 
-# Garante que as pastas de destino existam
+step "Criando diretórios de destino..."
 mkdir -p "$ROFI_DST_DIR"
 mkdir -p "$BIN_DST_DIR"
 
-# Checa se o diretório local ./rofi existe antes de prosseguir
 if [ -d "$ROFI_SRC_DIR" ]; then
+    step "Copiando configurações do Rofi..."
 
-    # Checa e copia o arquivo config.rasi
     if [ -f "$ROFI_SRC_DIR/config.rasi" ]; then
         cp "$ROFI_SRC_DIR/config.rasi" "$ROFI_DST_DIR/config.rasi"
-        echo "Arquivo $ROFI_DST_DIR/config.rasi atualizado/sobrescrito com sucesso."
+        ok "config.rasi copiado para $ROFI_DST_DIR/"
     else
-        echo "Aviso: config.rasi não foi encontrado dentro de $ROFI_SRC_DIR/"
+        warn "config.rasi não encontrado em $ROFI_SRC_DIR/"
     fi
 
-    # Checa e copia o arquivo powermenu.rasi
     if [ -f "$ROFI_SRC_DIR/powermenu.rasi" ]; then
         cp "$ROFI_SRC_DIR/powermenu.rasi" "$ROFI_DST_DIR/powermenu.rasi"
-        echo "Arquivo $ROFI_DST_DIR/powermenu.rasi atualizado/sobrescrito com sucesso."
+        ok "powermenu.rasi copiado para $ROFI_DST_DIR/"
     else
-        echo "Aviso: powermenu.rasi não foi encontrado dentro de $ROFI_SRC_DIR/"
+        warn "powermenu.rasi não encontrado em $ROFI_SRC_DIR/"
     fi
 
-    # Checa, copia e dá permissão de execução ao script rofi-powermenu
     if [ -f "$ROFI_SRC_DIR/rofi-powermenu" ]; then
         cp "$ROFI_SRC_DIR/rofi-powermenu" "$BIN_DST_DIR/rofi-powermenu"
         chmod +x "$BIN_DST_DIR/rofi-powermenu"
-        echo "Script $BIN_DST_DIR/rofi-powermenu atualizado e tornado executável com sucesso."
+        ok "rofi-powermenu copiado e tornado executável em $BIN_DST_DIR/"
     else
-        echo "Aviso: rofi-powermenu não foi encontrado dentro de $ROFI_SRC_DIR/"
+        warn "rofi-powermenu não encontrado em $ROFI_SRC_DIR/"
     fi
-
 else
-    echo "Erro: A pasta $ROFI_SRC_DIR não foi encontrada no mesmo diretório do script."
+    warn "Diretório $ROFI_SRC_DIR/ não encontrado; configurações do Rofi não copiadas."
 fi
+
+ok "Rofi configurado."
 
 # ####################################################################################
 # ///// DARK THEME
 # ####################################################################################
 
-# As configurações necessários para aplicar to tema no sistema estão no hyprland.lua
+log "Tema Escuro (Dark Theme)"
 
-sudo pacman -S --needed --noconfirm materia-gtk-theme
+step "Instalando pacotes de tema..."
+sudo pacman -S --needed --noconfirm materia-gtk-theme qt5ct qt6ct kvantum
 
-sudo pacman -S --needed --noconfirm qt5ct qt6ct kvantum
+step "Aplicando tema via gsettings..."
+if command -v gsettings &>/dev/null; then
+    gsettings set org.gnome.desktop.interface gtk-theme 'Materia-dark' || warn "Falha ao definir gtk-theme (sem sessão D-Bus?)."
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || warn "Falha ao definir color-scheme (sem sessão D-Bus?)."
+    ok "Tema escuro aplicado."
+else
+    warn "gsettings não encontrado; tema não aplicado."
+fi
 
-gsettings set org.gnome.desktop.interface gtk-theme 'Materia-dark'
-gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+ok "Tema escuro configurado."
 
 # ####################################################################################
 # ///// WALLPAPER
 # ####################################################################################
 
-# 1. Obtém o diretório exato onde este script está localizado
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+log "Wallpaper (Hyprpaper)"
 
-# 2. Instalação do hyprpaper
+step "Instalando hyprpaper..."
 sudo pacman -S --needed --noconfirm hyprpaper
 
-# 3. Criação dos diretórios (o -p evita erros se já existirem)
+step "Criando diretórios..."
 mkdir -p "$HOME/wallpapers"
 mkdir -p "$HOME/.config/hypr"
 
-# 4. Copia a imagem wallpaper.jpg local para a pasta ~/wallpapers/
 if [ -f "$SCRIPT_DIR/wallpaper.jpg" ]; then
     cp "$SCRIPT_DIR/wallpaper.jpg" "$HOME/wallpapers/wallpaper.jpg"
-    echo "Imagem wallpaper.jpg copiada para $HOME/wallpapers/"
+    ok "wallpaper.jpg copiado para $HOME/wallpapers/"
 else
-    echo "Aviso: wallpaper.jpg não foi encontrado no mesmo diretório do script."
+    warn "wallpaper.jpg não encontrado em $SCRIPT_DIR/"
 fi
 
-# 5. Copia e SOBRESCREVE o arquivo hyprpaper.conf local em ~/.config/hypr/
-TARGET_CONFIG="$HOME/.config/hypr/hyprpaper.conf"
-SOURCE_CONFIG="$SCRIPT_DIR/hypr/hyprpaper.conf"
-
-if [ -f "$SOURCE_CONFIG" ]; then
-    cp "$SOURCE_CONFIG" "$TARGET_CONFIG"
-    echo "Arquivo $TARGET_CONFIG atualizado/sobrescrito com sucesso."
+step "Copiando configuração do hyprpaper..."
+HYPRPAPER_SRC="$SCRIPT_DIR/hypr/hyprpaper.conf"
+HYPRPAPER_DST="$HOME/.config/hypr/hyprpaper.conf"
+if [ -f "$HYPRPAPER_SRC" ]; then
+    cp "$HYPRPAPER_SRC" "$HYPRPAPER_DST"
+    ok "hyprpaper.conf copiado para $HYPRPAPER_DST"
 else
-    echo "Erro: O arquivo hyprpaper.conf não foi encontrado no mesmo diretório do script."
+    warn "hyprpaper.conf não encontrado em $HYPRPAPER_SRC"
 fi
 
-# 6. Ativação e inicialização do serviço via Systemd/UWSM
-systemctl --user enable --now hyprpaper.service
+step "Ativando serviço hyprpaper no Systemd..."
+systemctl --user enable --now hyprpaper.service || warn "Não foi possível habilitar hyprpaper.service."
+
+ok "Wallpaper configurado."
 
 # ####################################################################################
-# ///// AUDIO
+# ///// AUDIO (PIPEWIRE)
 # ####################################################################################
 
+log "Áudio (PipeWire)"
+
+step "Instalando PipeWire e ferramentas..."
 sudo pacman -S --needed --noconfirm \
     pipewire \
     pipewire-alsa \
@@ -429,102 +506,162 @@ sudo pacman -S --needed --noconfirm \
     wireplumber \
     pavucontrol
 
+ok "Áudio configurado."
+
 # ####################################################################################
 # ///// CLIPBOARD
 # ####################################################################################
 
+log "Clipboard e Captura de Tela"
+
+step "Instalando wl-clipboard, grim e slurp..."
 sudo pacman -S --needed --noconfirm wl-clipboard grim slurp
 
+ok "Ferramentas de clipboard instaladas."
+
 # ####################################################################################
-# ///// NODE
+# ///// NODE (NVM)
 # ####################################################################################
 
-#---- Instalação do Node (Eu desenvolvo em TS quando tenho paciência em JS) ----
-# 1. Baixa e instala o NVM (Node Version Manager)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
+log "Node.js (NVM)"
 
-# 2. Carrega as variáveis do NVM na sessão atual do terminal (sem precisar reiniciar o shell)
+NVM_INSTALLER="/tmp/nvm-install-${NVM_VERSION}.sh"
+
+step "Baixando instalador do NVM v${NVM_VERSION}..."
+curl -fsSLo "$NVM_INSTALLER" "https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh"
+
+NVM_ACTUAL_SHA256="$(sha256sum "$NVM_INSTALLER" | awk '{print $1}')"
+if [ -n "$NVM_SHA256" ]; then
+    if [ "$NVM_ACTUAL_SHA256" != "$NVM_SHA256" ]; then
+        err "Checksum do NVM não confere. Esperado: $NVM_SHA256 | Obtido: $NVM_ACTUAL_SHA256"
+        rm -f "$NVM_INSTALLER"
+        exit 1
+    fi
+    ok "Checksum do NVM verificado."
+else
+    warn "NVM_SHA256 não definido. Hash obtido: $NVM_ACTUAL_SHA256"
+fi
+
+step "Executando instalador do NVM..."
+bash "$NVM_INSTALLER"
+rm -f "$NVM_INSTALLER"
+
+step "Carregando NVM na sessão atual..."
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-# 3. Baixa e instala a versão especificada do Node.js (ex: versão 24)
+step "Instalando Node.js 24..."
 nvm install 24
 
-# 4. Ativa o pnpm nativamente via Corepack
-corepack enable pnpm
+step "Ativando pnpm via Corepack..."
+if command -v corepack &>/dev/null; then
+    corepack enable pnpm
+    ok "pnpm ativado via Corepack."
+else
+    warn "Corepack não encontrado; pnpm não ativado."
+fi
 
-# 5. Validação das instalações no console
-echo "Node versão: $(node -v)"
-echo "NPM versão: $(npm -v)"
-echo "PNPM versão: $(pnpm -v)"
+ok "Node.js instalado."
+step "Node: $(node -v) | NPM: $(npm -v) | PNPM: $(pnpm -v)"
 
 # ####################################################################################
-# ///// UV
+# ///// UV (Astral)
 # ####################################################################################
 
-#---- Instalando o UV da Astral (Também faço bastantes coisas com python) ----
-curl -LsSf https://astral.sh/uv/install.sh | sh
+log "UV (Astral) v${UV_VERSION}"
+
+UV_INSTALLER="/tmp/uv-install-${UV_VERSION}.sh"
+
+step "Baixando instalador do UV v${UV_VERSION}..."
+curl -fsSLo "$UV_INSTALLER" "https://releases.astral.sh/github/uv/releases/download/${UV_VERSION}/uv-installer.sh"
+
+UV_ACTUAL_SHA256="$(sha256sum "$UV_INSTALLER" | awk '{print $1}')"
+if [ -n "$UV_SHA256" ]; then
+    if [ "$UV_ACTUAL_SHA256" != "$UV_SHA256" ]; then
+        err "Checksum do UV não confere. Esperado: $UV_SHA256 | Obtido: $UV_ACTUAL_SHA256"
+        rm -f "$UV_INSTALLER"
+        exit 1
+    fi
+    ok "Checksum do UV verificado."
+else
+    warn "UV_SHA256 não definido. Hash obtido: $UV_ACTUAL_SHA256"
+fi
+
+step "Executando instalador do UV..."
+sh "$UV_INSTALLER"
+rm -f "$UV_INSTALLER"
+
+ok "UV v${UV_VERSION} instalado."
 
 # ####################################################################################
 # ///// DOCKER
 # ####################################################################################
 
-sudo pacman -S --needed --noconfirm docker
+log "Docker"
 
-# O docker compose vem separado do docker engine no pacote do pacman, então é necessário instalar separadamente
-sudo pacman -S --needed --noconfirm docker-compose
+step "Instalando Docker e complementos..."
+sudo pacman -S --needed --noconfirm \
+    docker \
+    docker-compose \
+    docker-buildx
 
-# O buildx também vem em outro pacote separado do docker principal
-sudo pacman -S --needed --noconfirm docker-buildx
-
-# É necessário abilitar o docker no systemd
+step "Habilitando serviço Docker no Systemd..."
 sudo systemctl enable --now docker
 
-sudo usermod -aG docker $USER
+step "Adicionando usuário atual ao grupo docker..."
+sudo usermod -aG docker "$USER" || warn "Não foi possível adicionar $USER ao grupo docker."
+warn "Reinicie a sessão (logout/login) para o grupo docker ter efeito."
+
+ok "Docker configurado."
 
 # ####################################################################################
 # ///// CODE EDITOR (ZED)
 # ####################################################################################
 
-# 1. Obtém o diretório exato onde este script está localizado
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+log "Zed (Code Editor)"
 
-# 2. Instalação do Zed via Flatpak
-flatpak install --noninteractive flathub dev.zed.Zed
+step "Instalando Zed via Flatpak..."
+flatpak install --assumeyes flathub dev.zed.Zed
 
-# 3. Define o diretório de destino das configurações no sandbox do Flatpak
 ZED_CONFIG_DIR="$HOME/.var/app/dev.zed.Zed/config/zed"
 
-# 4. Verifica se a pasta do Zed no Flatpak pré-existe
 if [ -d "$ZED_CONFIG_DIR" ]; then
+    step "Copiando configurações do Zed..."
     SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
     TARGET_ZED_SETTINGS="$ZED_CONFIG_DIR/settings.json"
 
     if [ -f "$SOURCE_ZED_SETTINGS" ]; then
         cp "$SOURCE_ZED_SETTINGS" "$TARGET_ZED_SETTINGS"
-        echo "Configuração do Zed ($TARGET_ZED_SETTINGS) atualizada com sucesso."
+        ok "settings.json copiado para $TARGET_ZED_SETTINGS"
     else
-        echo "Erro: O arquivo settings.json não foi encontrado em $SOURCE_ZED_SETTINGS"
+        warn "settings.json não encontrado em $SOURCE_ZED_SETTINGS"
     fi
 else
-    echo "Erro: O diretório de destino $ZED_CONFIG_DIR não existe. Abra o Zed ao menos uma vez para gerar a estrutura do Flatpak."
+    warn "Diretório $ZED_CONFIG_DIR/ não existe. Abra o Zed ao menos uma vez para gerar a estrutura."
 fi
+
+ok "Zed configurado."
 
 # ####################################################################################
 # ///// OBS STUDIO & LOOPBACK
 # ####################################################################################
 
-echo ""
-echo "=== Instalando OBS Studio ==="
-echo "-> Instalando OBS Studio e v4l2loopback (para câmera e áudio virtual)..."
+log "OBS Studio e v4l2loopback"
+
+step "Instalando OBS Studio e v4l2loopback..."
 sudo pacman -S --needed --noconfirm obs-studio v4l2loopback-dkms
+
+ok "OBS Studio instalado."
+
+# Script Loopback para o obs, em breve...
 
 # ####################################################################################
 # ///// THUNAR E FERRAMENTAS DE ARQUIVOS
 # ####################################################################################
 
-echo ""
-echo "=== Instalando Thunar e utilitários de arquivos ==="
+log "Thunar e Ferramentas de Arquivos"
+
+step "Instalando Thunar e utilitários..."
 sudo pacman -S --needed --noconfirm \
     thunar \
     thunar-archive-plugin \
@@ -539,120 +676,147 @@ sudo pacman -S --needed --noconfirm \
     gzip \
     bzip2
 
+ok "Thunar e utilitários instalados."
+
 # ####################################################################################
 # ///// VISUALIZADORES
 # ####################################################################################
 
-# MPV - VIDEO VIEWER + FFMPEG
-sudo pacman -S --needed --noconfirm mpv ffmpeg
+log "Visualizadores (Mpv, Feh, FFmpeg)"
 
-# FEH - IMAGE VIEWER
-sudo pacman -S --needed --noconfirm feh
+step "Instalando mpv, ffmpeg e feh..."
+sudo pacman -S --needed --noconfirm mpv ffmpeg feh
+
+ok "Visualizadores instalados."
 
 # ####################################################################################
 # ///// RCLONE
 # ####################################################################################
 
+log "Rclone"
+
+step "Instalando rclone..."
 sudo pacman -S --needed --noconfirm rclone
+
+ok "Rclone instalado."
 
 # ####################################################################################
 # ///// NAVEGADORES
 # ####################################################################################
 
-echo ""
-echo "=== Instalando Google Chrome via Flatpak ==="
+log "Navegadores (Chrome e Zen)"
+
+step "Instalando Google Chrome via Flatpak..."
 flatpak install --assumeyes flathub com.google.Chrome
 
-echo ""
-echo "=== Instalando Zen Browser via Flatpak ==="
+step "Instalando Zen Browser via Flatpak..."
 flatpak install --assumeyes flathub app.zen_browser.zen
 
-echo "-> Aplicando permissões e tema no Zen Browser..."
+step "Aplicando permissões e tema no Zen Browser e Chrome..."
 SHARED_DIR="$HOME/flatpaks-share"
 mkdir -p "$SHARED_DIR"
-
 sudo flatpak override --env=GTK_THEME=Materia-dark app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" com.google.Chrome
 
-####################################################################################
-# ///// DBEAVER
-####################################################################################
+ok "Navegadores instalados."
 
-echo ""
-echo "=== Instalando DBeaver Community via Flatpak ==="
+# ####################################################################################
+# ///// DBEAVER
+# ####################################################################################
+
+log "DBeaver Community"
+
+step "Instalando DBeaver via Flatpak..."
 flatpak install --assumeyes flathub io.dbeaver.DBeaverCommunity
 
-####################################################################################
-# ///// DISCORD
-####################################################################################
+ok "DBeaver instalado."
 
-echo ""
-echo "=== Instalando Discord via Flatpak ==="
+# ####################################################################################
+# ///// DISCORD
+# ####################################################################################
+
+log "Discord"
+
+step "Instalando Discord via Flatpak..."
 flatpak install --assumeyes flathub com.discordapp.Discord
 
-####################################################################################
-# ///// SPOTIFY
-####################################################################################
+ok "Discord instalado."
 
-echo ""
-echo "=== Instalando Spotify via Flatpak ==="
+# ####################################################################################
+# ///// SPOTIFY
+# ####################################################################################
+
+log "Spotify"
+
+step "Instalando Spotify via Flatpak..."
 flatpak install --assumeyes flathub com.spotify.Client
 
-####################################################################################
-# ///// ANKI
-####################################################################################
+ok "Spotify instalado."
 
-echo ""
-echo "=== Instalando Anki via Flatpak ==="
+# ####################################################################################
+# ///// ANKI
+# ####################################################################################
+
+log "Anki"
+
+step "Instalando Anki via Flatpak..."
 flatpak install --assumeyes flathub net.ankiweb.Anki
 
+step "Configurando diretório de dados do Anki..."
 mkdir -p "$HOME/documents/anki/"
+flatpak override --user --filesystem="$HOME/documents/anki" net.ankiweb.Anki || warn "Falha ao configurar filesystem do Anki."
+flatpak override --user --env=ANKI_BASE="$HOME/documents/anki" net.ankiweb.Anki || warn "Falha ao configurar ANKI_BASE."
 
-flatpak override --user --filesystem="$HOME/documents/anki" net.ankiweb.Anki
-flatpak override --user --env=ANKI_BASE="$HOME/documents/anki" net.ankiweb.Anki
+ok "Anki instalado e configurado."
 
-####################################################################################
+# ####################################################################################
 # ///// OBSIDIAN
-####################################################################################
+# ####################################################################################
 
-echo ""
-echo "=== Instalando Obsidian via Flatpak ==="
+log "Obsidian"
+
+step "Instalando Obsidian via Flatpak..."
 flatpak install --assumeyes flathub md.obsidian.Obsidian
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BIN_DST_DIR="$HOME/.local/bin"
-
-# Cria diretórios necessários
+step "Criando diretórios necessários..."
 mkdir -p "$HOME/documents/ocarina-of-time/"
 mkdir -p "$HOME/scripts/"
 mkdir -p "$HOME/.config/systemd/user"
 mkdir -p "$BIN_DST_DIR"
 
-# Concede permissão de acesso à pasta do Vault no Flatpak
-flatpak override --user --filesystem="$HOME/documents/ocarina-of-time" md.obsidian.Obsidian
+step "Concedendo acesso ao Vault no Flatpak..."
+flatpak override --user --filesystem="$HOME/documents/ocarina-of-time" md.obsidian.Obsidian || warn "Falha ao configurar filesystem do Obsidian."
 
-# Copia o script de sincronização do Rclone
+step "Copiando script de sincronização do Rclone..."
 if [ -f "$SCRIPT_DIR/obsidian-rclone/sync-obsidian" ]; then
     cp "$SCRIPT_DIR/obsidian-rclone/sync-obsidian" "$BIN_DST_DIR/sync-obsidian"
     chmod +x "$BIN_DST_DIR/sync-obsidian"
-    echo "Script de sync do obsidian copiado e configurado em: $BIN_DST_DIR/sync-obsidian"
+    ok "sync-obsidian copiado e executável em $BIN_DST_DIR/"
 else
-    echo "Aviso: O script 'sync-obsidian' não foi encontrado no diretório do instalador."
+    warn "sync-obsidian não encontrado em $SCRIPT_DIR/obsidian-rclone/"
 fi
 
-# Copia o serviço de usuário do systemd para o UWSM
+step "Copiando serviço systemd do Obsidian Sync..."
 if [ -f "$SCRIPT_DIR/obsidian-rclone/obsidian-sync.service" ]; then
     cp "$SCRIPT_DIR/obsidian-rclone/obsidian-sync.service" "$HOME/.config/systemd/user/obsidian-sync.service"
-    echo "Serviço systemd copiado com sucesso para: $HOME/.config/systemd/user/obsidian-sync.service"
+    ok "obsidian-sync.service copiado para ~/.config/systemd/user/"
 else
-    echo "Aviso: O arquivo 'obsidian-sync.service' não foi encontrado no diretório do instalador."
+    warn "obsidian-sync.service não encontrado em $SCRIPT_DIR/obsidian-rclone/"
 fi
 
-# Recarrega o daemon de usuário do systemd e ativa o serviço
-echo "=== Ativando o serviço no SystemD (UWSM) ==="
-systemctl --user daemon-reload
-systemctl --user enable --now obsidian-sync.service
+step "Ativando serviço no Systemd..."
+systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
+systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
 
-echo ""
-echo "=== Configuração concluída! ==="
+ok "Obsidian instalado e sincronização configurada."
+
+# ####################################################################################
+# ///// FIM
+# ####################################################################################
+
+log "Configuração concluída!"
+warn "Reinicie a sessão (logout/login) para aplicar: shell ZSH, grupo docker e temas GTK."
+warn "Preencha NVM_SHA256 e UV_SHA256 no topo do script para ativar verificação de integridade."
+
+sudo shutdown -r now
