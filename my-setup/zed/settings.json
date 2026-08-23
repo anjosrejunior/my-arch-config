@@ -1,0 +1,152 @@
+{
+  "auto_install_extensions": {
+    "toml": true,
+    "symbols": true,
+    "min-theme": true,
+    "make": true,
+    "html": true,
+    "dockerfile": true,
+    "biome": true
+  },
+	"icon_theme": "Symbols Icon Theme",
+	"cli_default_open_behavior": "existing_window",
+
+	/* --- TIPOGRAFIA --- */
+	"buffer_font_family": "JetBrainsMono Nerd Font",
+	"buffer_font_size": 15,
+	"ui_font_size": 16,
+
+	/* --- INTERFACE E TEMA --- */
+	"theme": {
+		"mode": "dark",
+		"light": "One Light",
+		"dark": "Min Dark (Blurred)"
+	},
+	"minimap": {
+		"show": "never"
+	},
+	"project_panel": {
+		"dock": "left"
+	},
+	"tabs": {
+		"git_status": true
+	},
+
+	/* --- COMPORTAMENTO DE ARQUIVOS E SALVAMENTO --- */
+	"autosave": {
+		"after_delay": {
+			"milliseconds": 1000
+		}
+	},
+	"format_on_save": "on",
+
+	/* --- LINTING & LANGUAGE SERVERS --- */
+	"lsp": {
+		"pyright": {
+			"settings": {
+				"python.analysis": {
+					"typeCheckingMode": "strict",
+					"diagnosticMode": "workspace",
+					"autoImportCompletions": true
+				}
+			}
+		},
+		"ruff": {
+			"initialization_options": {
+				"settings": {
+					"args": ["--ignore=E501"]
+				}
+			}
+		}
+	},
+
+	/* --- CONFIGURAÇÕES POR LINGUAGEM --- */
+	"languages": {
+		"Python": {
+			"tab_size": 4,
+			"hard_tabs": false,
+			"language_servers": ["pyright", "ruff"],
+			"formatter": {
+				"language_server": {
+					"name": "ruff"
+				}
+			},
+			"code_actions_on_format": {
+				"source.organizeImports.ruff": true,
+				"source.fixAll.ruff": true
+			}
+		},
+		"TypeScript": {
+			"language_servers": ["biome", "tailwindcss-language-server"],
+			"formatter": {
+				"language_server": {
+					"name": "biome"
+				}
+			},
+			"code_actions_on_format": {
+				"source.organizeImports.biome": true,
+				"source.fixAll.biome": true
+			}
+		},
+		"TSX": {
+			"language_servers": ["biome", "tailwindcss-language-server"],
+			"formatter": {
+				"language_server": {
+					"name": "biome"
+				}
+			},
+			"code_actions_on_format": {
+				"source.organizeImports.biome": true,
+				"source.fixAll.biome": true
+			}
+		},
+		"JavaScript": {
+			"language_servers": ["biome", "tailwindcss-language-server"],
+			"formatter": {
+				"language_server": {
+					"name": "biome"
+				}
+			},
+			"code_actions_on_format": {
+				"source.organizeImports.biome": true,
+				"source.fixAll.biome": true
+			}
+		},
+		"JSX": {
+			"language_servers": ["biome", "tailwindcss-language-server"],
+			"formatter": {
+				"language_server": {
+					"name": "biome"
+				}
+			},
+			"code_actions_on_format": {
+				"source.organizeImports.biome": true,
+				"source.fixAll.biome": true
+			}
+		},
+		"JSON": {
+			"language_servers": ["biome"],
+			"formatter": {
+				"language_server": {
+					"name": "biome"
+				}
+			}
+		},
+		"JSONC": {
+			"language_servers": ["biome"],
+			"formatter": {
+				"language_server": {
+					"name": "biome"
+				}
+			}
+		},
+		"CSS": {
+			"language_servers": ["biome", "tailwindcss-language-server"],
+			"formatter": {
+				"language_server": {
+					"name": "biome"
+				}
+			}
+		}
+	}
+}
