@@ -1,0 +1,10 @@
+{
+  "name": "arch-linux",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "remoteUser": "node",
+  "updateRemoteUserUID": true,
+  "workspaceFolder": "/workspace",
+  "customizations": {
+  }
+}
