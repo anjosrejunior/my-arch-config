@@ -106,6 +106,11 @@ source <(fzf --zsh)
 # Starship Prompt
 eval "$(starship init zsh)"
 
+# Inicia o ssh-agent se ainda não estiver rodando na sessão
+if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null
+fi
+
 # Alias do Zed
 alias zeditor='flatpak run dev.zed.Zed'
 EOF
@@ -188,7 +193,7 @@ ok "GNOME Keyring instalado."
 log "Configuração do Git"
 
 step "Instalando git..."
-sudo pacman -S --needed --noconfirm git
+sudo pacman -S --needed --noconfirm git less # Git and Less Terminal Pager
 
 step "Aplicando configurações globais..."
 git config --global user.name "$GIT_NAME"
@@ -853,7 +858,5 @@ ok "Obsidian instalado e sincronização configurada."
 # ####################################################################################
 
 log "Configuração concluída!"
-warn "Reinicie a sessão (logout/login) para aplicar: shell ZSH, grupo docker e temas GTK."
-warn "Preencha NVM_SHA256 e UV_SHA256 no topo do script para ativar verificação de integridade."
 
 sudo shutdown -r now
