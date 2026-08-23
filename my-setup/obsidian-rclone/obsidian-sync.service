@@ -7,15 +7,9 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-
-# Tempo máximo que o systemd vai esperar o Rclone terminar antes de desligar (ex: 5 minutos)
 TimeoutStopSec=300
-
-# Executado no Start (baixa do Drive -> Local)
-ExecStart=%h/scripts/sync-obsidian.sh start
-
-# Executado no Logout, Queda do UWSM, Reboot ou Poweroff (envia do Local -> Drive)
-ExecStop=%h/scripts/sync-obsidian.sh stop
+ExecStart=%h/.local/bin/sync-obsidian start
+ExecStop=%h/.local/bin/sync-obsidian stop
 
 [Install]
 WantedBy=graphical-session.target
