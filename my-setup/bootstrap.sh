@@ -496,7 +496,8 @@ session    include      system-local-login
 session    optional     pam_gnome_keyring.so auto_start
 EOF
 
-# Validação básica: cada linha não-vazia e não-comentada deve começar com um tipo de seção conhecido.
+sed -i 's/\xc2\xa0/ /g' "$PAM_TMP"
+
 if grep -vE '^\s*(#|$|auth|account|password|session)\b' "$PAM_TMP" | grep -vE '^\s*$' | grep -q .; then
     err "Sintaxe PAM inválida detectada no arquivo temporário; abortando para preservar config atual."
     rm -f "$PAM_TMP"
