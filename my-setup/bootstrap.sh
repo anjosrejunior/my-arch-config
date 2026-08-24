@@ -364,6 +364,8 @@ else
     ok "YAY já está instalado."
 fi
 
+instalação do yay pede o sudo
+
 # ####################################################################################
 # ///// FLATPAK
 # ####################################################################################
@@ -451,71 +453,55 @@ sudo pacman -S --needed --noconfirm uwsm
 # ///// GERENCIADOR DE LOGIN — GREETD + TUIGREET
 # ####################################################################################
 
+GREETD_SRC_DIR="$SCRIPT_DIR/greetd"
+
 log "Gerenciador de Login (GreetD + Tuigreet)"
 
 step "Instalando greetd e tuigreet..."
 sudo pacman -S --needed --noconfirm greetd greetd-tuigreet
 
-step "Configurando greetd..."
-sudo tee /etc/greetd/config.toml > /dev/null << 'EOF'
-[terminal]
-vt = 1
+if [ -d "$GREETD_SRC_DIR" ]; then
 
-[default_session]
-command = "tuigreet --time --remember --asterisks --sessions /usr/share/wayland-sessions --cmd 'uwsm start hyprland.desktop'"
-user = "greeter"
-EOF
-ok "greetd configurado em /etc/greetd/config.toml."
+    step "Copiando configuração do greetd..."
+    if [ -f "$GREETD_SRC_DIR/config.toml" ]; then
+        sudo mkdir -p /etc/greetd
+        sudo cp "$GREETD_SRC_DIR/config.toml" /etc/greetd/config.toml
+        sudo chmod 644 /etc/greetd/config.toml
+        ok "config.toml copiado para /etc/greetd/"
+    else
+        warn "config.toml não encontrado em $GREETD_SRC_DIR/"
+    fi
+
+    step "Backup do PAM e configuração para auto-unlock do GNOME Keyring..."
+    PAM_FILE="/etc/pam.d/greetd"
+
+    if [ -f "$GREETD_SRC_DIR/greetd" ]; then
+        if [ -f "$PAM_FILE" ]; then
+            PAM_BACKUP="${PAM_FILE}.bak.$(date +%s)"
+            sudo cp "$PAM_FILE" "$PAM_BACKUP"
+            ok "Backup do PAM criado em: $PAM_BACKUP"
+        fi
+
+        sudo cp "$GREETD_SRC_DIR/greetd" "$PAM_FILE"
+        sudo chmod 644 "$PAM_FILE"
+        ok "Arquivo PAM greetd copiado para $PAM_FILE"
+    else
+        warn "Arquivo PAM $GREETD_SRC_DIR/greetd não encontrado/"
+    fi
+
+else
+    warn "Diretório $GREETD_SRC_DIR/ não encontrado; configurações do greetd não copiadas."
+fi
 
 step "Definindo permissões do greeter e criando cache..."
 sudo usermod -aG video,input greeter
 sudo mkdir -p /var/cache/tuigreet
 sudo chown -R greeter:greeter /var/cache/tuigreet
 
-step "Backup do PAM e configuração para auto-unlock do GNOME Keyring..."
-PAM_FILE="/etc/pam.d/greetd"
-PAM_BACKUP=""
-if [ -f "$PAM_FILE" ]; then
-    PAM_BACKUP="${PAM_FILE}.bak.$(date +%s)"
-    sudo cp "$PAM_FILE" "$PAM_BACKUP"
-    ok "Backup do PAM criado: $PAM_BACKUP"
-fi
-
-# Escreve a nova configuração num arquivo temporário e valida a sintaxe básica antes de aplicar.
-PAM_TMP="$(mktemp)"
-cat > "$PAM_TMP" << 'EOF'
-#%PAM-1.0
-
-auth       required     pam_nologin.so
-auth       include      system-local-login
-auth       optional     pam_gnome_keyring.so
-
-account    include      system-local-login
-
-session    include      system-local-login
-session    optional     pam_gnome_keyring.so auto_start
-EOF
-
-sed -i 's/\xc2\xa0/ /g' "$PAM_TMP"
-
-if grep -vE '^\s*(#|$|auth|account|password|session)\b' "$PAM_TMP" | grep -vE '^\s*$' | grep -q .; then
-    err "Sintaxe PAM inválida detectada no arquivo temporário; abortando para preservar config atual."
-    rm -f "$PAM_TMP"
-    exit 1
-fi
-
-sudo install -m 644 "$PAM_TMP" "$PAM_FILE"
-rm -f "$PAM_TMP"
-if [ -n "$PAM_BACKUP" ]; then
-    ok "PAM configurado para auto-unlock do GNOME Keyring (backup em $PAM_BACKUP)."
-else
-    ok "PAM configurado para auto-unlock do GNOME Keyring."
-fi
-
 step "Habilitando serviço greetd..."
 sudo systemctl enable greetd
 
-ok "GreetD + Tuigreet configurados."
+ok "GreetD + Tuigreet configurados com sucesso."
 
 # ####################################################################################
 # ///// LOCK SCREEN & SUPENSÃO DE SISTEMA
