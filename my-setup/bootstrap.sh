@@ -817,23 +817,21 @@ ok "Docker configurado."
 log "Zed (Code Editor)"
 
 step "Instalando Zed via Flatpak..."
-flatpak install --assumeyes flathub dev.zed.Zed
+# O timeout evita falhas em downloads pesados de runtimes
+flatpak install --assumeyes --http-timeout=60 flathub dev.zed.Zed
 
 ZED_CONFIG_DIR="$HOME/.var/app/dev.zed.Zed/config/zed"
+SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
+TARGET_ZED_SETTINGS="$ZED_CONFIG_DIR/settings.json"
 
-if [ -d "$ZED_CONFIG_DIR" ]; then
+if [ -f "$SOURCE_ZED_SETTINGS" ]; then
     step "Copiando configurações do Zed..."
-    SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
-    TARGET_ZED_SETTINGS="$ZED_CONFIG_DIR/settings.json"
-
-    if [ -f "$SOURCE_ZED_SETTINGS" ]; then
-        cp "$SOURCE_ZED_SETTINGS" "$TARGET_ZED_SETTINGS"
-        ok "settings.json copiado para $TARGET_ZED_SETTINGS"
-    else
-        warn "settings.json não encontrado em $SOURCE_ZED_SETTINGS"
-    fi
+    # Cria a estrutura de pastas do Flatpak caso não exista
+    mkdir -p "$ZED_CONFIG_DIR"
+    cp "$SOURCE_ZED_SETTINGS" "$TARGET_ZED_SETTINGS"
+    ok "settings.json copiado para $TARGET_ZED_SETTINGS"
 else
-    warn "Diretório $ZED_CONFIG_DIR/ não existe. Abra o Zed ao menos uma vez para gerar a estrutura."
+    warn "settings.json não encontrado em $SOURCE_ZED_SETTINGS"
 fi
 
 ok "Zed configurado."
