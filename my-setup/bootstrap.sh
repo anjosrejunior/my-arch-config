@@ -143,6 +143,36 @@ done
 ok "Perfil do Git coletado: $GIT_NAME <$GIT_EMAIL>"
 
 # ####################################################################################
+# ///// SELEÇÃO DE DRIVERS DE VÍDEO
+# ####################################################################################
+
+log "Seleção de perfil de drivers"
+
+NVIDIA_CHOICE=""
+
+while [ -z "${NVIDIA_CHOICE}" ]; do
+    echo "---------------------------------"
+    echo "1) Sem drivers NVIDIA"
+    echo "2) 1050ti (Drivers NVIDIA)"
+    echo "---------------------------------"
+    read -rp "Escolha uma opção [1 ou 2]: " OPTION
+
+    case "${OPTION}" in
+        1)
+            NVIDIA_CHOICE="no_nvidia"
+            ok "Opção selecionada: Sem drivers NVIDIA"
+            ;;
+        2)
+            NVIDIA_CHOICE="1050ti"
+            ok "Opção selecionada: Drivers NVIDIA (1050ti)"
+            ;;
+        *)
+            warn "Opção inválida. Digite 1 ou 2."
+            ;;
+    esac
+done
+
+# ####################################################################################
 # ///// INIT — ATUALIZAÇÃO DO SISTEMA E PACOTES BASE
 # ####################################################################################
 
@@ -371,14 +401,41 @@ ok "Hyprland e dependências instalados."
 step "Criando diretório de config do hyprland..."
 mkdir -p "$HOME/.config/hypr"
 
-step "Copiando hyrpland.lua..."
-HYPRLAND_SRC="$SCRIPT_DIR/hypr/hyprland.lua"
-HYPRLAND_DST="$HOME/.config/hypr/hyprland.lua"
-if [ -f "$HYPRLAND_SRC" ]; then
-    cp "$HYPRLAND_SRC" "$HYPRLAND_DST"
-    ok "hyprland.lua copiado para $HYPRLAND_DST"
+step "Copiando hyprland.lua..."
+
+if [ "${NVIDIA_CHOICE}" = "1050ti" ]; then
+    HYPRLAND_SRC_NAME="hyprland-1050ti.lua"
 else
-    warn "hyprland.lua não encontrado em $HYPRLAND_SRC"
+    HYPRLAND_SRC_NAME="hyprland.lua"
+fi
+
+HYPRLAND_SRC="$SCRIPT_DIR/hypr/$HYPRLAND_SRC_NAME"
+HYPRLAND_DST="$HOME/.config/hypr/hyprland.lua"
+
+if [ -f "$HYPRLAND_SRC" ]; then
+    mkdir -p "$HOME/.config/hypr"
+    cp "$HYPRLAND_SRC" "$HYPRLAND_DST"
+    ok "$HYPRLAND_SRC_NAME copiado para $HYPRLAND_DST"
+else
+    warn "Arquivo de origem não encontrado em $HYPRLAND_SRC"
+fi
+
+# ####################################################################################
+# ///// NVIDIA DRIVERS
+# ####################################################################################
+
+if [ "${NVIDIA_CHOICE}" = "1050ti" ]; then
+    log "Instalando drivers e suporte NVIDIA..."
+
+    echo "Instalando pacotes de suporte (libva, egl-wayland)..."
+    sudo pacman -S --needed --noconfirm libva-nvidia-driver egl-wayland
+
+    echo "Instalando drivers NVIDIA 580xx via YAY..."
+    yay -S --noconfirm nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
+
+    ok "Drivers NVIDIA instalados com sucesso."
+else
+    ok "Opção 'Sem NVIDIA' selecionada. Pulando a instalação de drivers."
 fi
 
 # ####################################################################################
