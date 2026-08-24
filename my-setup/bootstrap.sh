@@ -349,20 +349,6 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 ok "Flatpak configurado."
 
 # ####################################################################################
-# ///// NVIDIA DRIVERS
-# ####################################################################################
-
-log "Drivers NVIDIA"
-
-step "Instalando pacotes de suporte (libva, egl-wayland)..."
-sudo pacman -S --needed --noconfirm libva-nvidia-driver egl-wayland
-
-step "Instalando drivers NVIDIA 580xx via YAY..."
-yay -S --noconfirm nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils
-
-ok "Drivers NVIDIA instalados."
-
-# ####################################################################################
 # ///// HYPRLAND
 # ####################################################################################
 
