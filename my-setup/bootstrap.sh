@@ -95,6 +95,9 @@ sudo -v
 ( while true; do sudo -v; sleep 50; done 2>/dev/null ) &
 SUDO_REFRESH_PID=$!
 
+# Mata o processo do sudo-refresh ao sair do script (mesmo em caso de erro)
+trap 'kill "$SUDO_REFRESH_PID" 2>/dev/null || true' EXIT
+
 # ---- Helper: verifica se o systemd --user está disponível ----
 user_systemd_ok() {
     [ -d "/run/user/$(id -u)/systemd" ] && systemctl --user is-system-running >/dev/null 2>&1
@@ -358,13 +361,15 @@ sudo pacman -S --needed --noconfirm base-devel git
 
 if ! command -v yay &>/dev/null; then 
     step "YAY não encontrado. Clonando e compilando a versão mais recente..."
-    ( cd /tmp && rm -rf yay && git clone --depth 1 https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm )
+    ( 
+        cd /tmp && rm -rf yay && git clone --depth 1 https://aur.archlinux.org/yay.git && cd yay
+        makepkg -s --noconfirm --needed
+        sudo pacman -U --noconfirm yay-*.pkg.tar.zst
+    )
     ok "YAY instalado com sucesso."
 else
     ok "YAY já está instalado."
 fi
-
-instalação do yay pede o sudo
 
 # ####################################################################################
 # ///// FLATPAK
