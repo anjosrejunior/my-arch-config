@@ -383,6 +383,8 @@ sudo pacman -S --needed --noconfirm flatpak
 step "Adicionando repositório Flathub..."
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || warn "Flathub já existe ou não foi possível adicionar."
 
+flatpak update --appstream
+
 ok "Flatpak configurado."
 
 # ####################################################################################
@@ -818,7 +820,7 @@ log "Zed (Code Editor)"
 
 step "Instalando Zed via Flatpak..."
 # O timeout evita falhas em downloads pesados de runtimes
-flatpak install --assumeyes --http-timeout=60 flathub dev.zed.Zed
+flatpak install --assumeyes flathub dev.zed.Zed
 
 ZED_CONFIG_DIR="$HOME/.var/app/dev.zed.Zed/config/zed"
 SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
