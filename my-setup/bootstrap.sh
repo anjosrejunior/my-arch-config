@@ -15,7 +15,6 @@ NVM_VERSION="0.40.6"
 NVM_SHA256="2ef7e8d4373c1ffd70daa55f919f629e98a619543ffc0a8d892d77a5247e50e4"   # SHA-256 do install.sh do NVM; vazio = apenas exibir e prosseguir
 UV_VERSION="0.12.5"
 UV_SHA256="504511fbbbd811aeaba6738abc79408956b6c7da0ca35437b3dcc24a41efc111"    # SHA-256 do install.sh do UV; vazio = apenas exibir e prosseguir
-YAY_TAG="v12.4.3"
 
 # ---- Diretórios base (definidos uma única vez) ----
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -206,12 +205,17 @@ fi
 
 step "Definindo ZSH como shell padrão..."
 ZSH_PATH="$(command -v zsh || echo /usr/bin/zsh)"
+
+# Detecta o usuário real (caso o script esteja rodando via sudo)
+REAL_USER="${SUDO_USER:-$USER}"
+
 if grep -q "$ZSH_PATH" /etc/shells 2>/dev/null; then
-    if chsh -s "$ZSH_PATH"; then
-        ok "ZSH definido como shell padrão."
-        warn "Faça logout/login (ou reinicie o terminal) para a mudança ter efeito."
+    # Usa sudo chsh especificando o usuário explicitamente
+    if sudo chsh -s "$ZSH_PATH" "$REAL_USER"; then
+        ok "ZSH definido como shell padrão para $REAL_USER."
+        warn "Faça logout/login (ou reinicie a sessão) para a mudança ter efeito."
     else
-        warn "Falha ao definir zsh como shell padrão. Tente manualmente: chsh -s $ZSH_PATH"
+        warn "Falha ao definir zsh. Tente manualmente: chsh -s $ZSH_PATH"
     fi
 else
     warn "$ZSH_PATH não está em /etc/shells; shell padrão não alterado."
@@ -319,13 +323,13 @@ step "Email: $(git config --global user.email)"
 
 log "YAY (AUR Helper)"
 
-step "Instalando base-devel..."
-sudo pacman -S --needed --noconfirm base-devel
+step "Instalando base-devel e git..."
+sudo pacman -S --needed --noconfirm base-devel git
 
-if ! command -v yay &>/dev/null; then
-    step "YAY não encontrado. Clonando e compilando..."
-    ( cd /tmp && rm -rf yay && git clone --branch "$YAY_TAG" --depth 1 https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm )
-    ok "YAY ${YAY_TAG} instalado."
+if ! command -v yay &>/dev/null; then 
+    step "YAY não encontrado. Clonando e compilando a versão mais recente..."
+    ( cd /tmp && rm -rf yay && git clone --depth 1 https://aur.archlinux.org/yay.git && cd yay && makepkg -si --noconfirm )
+    ok "YAY instalado com sucesso."
 else
     ok "YAY já está instalado."
 fi
