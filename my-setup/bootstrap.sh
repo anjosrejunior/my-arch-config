@@ -749,10 +749,6 @@ else
 fi
 
 ok "Node.js instalado."
-NODE_VER="$(node -v 2>/dev/null || echo 'N/A')"
-NPM_VER="$(npm -v 2>/dev/null || echo 'N/A')"
-PNPM_VER="$(pnpm -v 2>/dev/null || echo 'N/A')"
-step "Node: ${NODE_VER} | NPM: ${NPM_VER} | PNPM: ${PNPM_VER}"
 
 # ####################################################################################
 # ///// UV (Astral)
