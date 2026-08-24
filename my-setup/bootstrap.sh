@@ -706,6 +706,21 @@ ok "Ferramentas de clipboard instaladas."
 
 log "Node.js (NVM)"
 
+export NVM_DIR="$HOME/.nvm"
+
+# 1. Carrega o NVM se ele já existir na máquina
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    \. "$NVM_DIR/nvm.sh"
+fi
+
+# 2. SE o Node já estiver instalado e disponível, PULA todo o resto
+if command -v node &>/dev/null; then
+    ok "Node.js já está instalado ($(node -v)). Pulando etapa."
+    return 0 2>/dev/null || exit 0
+fi
+
+# --- A partir daqui roda APENAS se o Node NÃO estiver instalado ---
+
 NVM_INSTALLER="/tmp/nvm-install-${NVM_VERSION}.sh"
 
 step "Baixando instalador do NVM v${NVM_VERSION}..."
@@ -728,7 +743,6 @@ bash "$NVM_INSTALLER"
 rm -f "$NVM_INSTALLER"
 
 step "Carregando NVM na sessão atual..."
-export NVM_DIR="$HOME/.nvm"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
     \. "$NVM_DIR/nvm.sh"
     ok "NVM carregado."
@@ -742,13 +756,14 @@ nvm install 24 || { err "Falha ao instalar Node.js 24 via NVM."; exit 1; }
 
 step "Ativando pnpm via Corepack..."
 if command -v corepack &>/dev/null; then
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     corepack enable pnpm
     ok "pnpm ativado via Corepack."
 else
     warn "Corepack não encontrado; pnpm não ativado."
 fi
 
-ok "Node.js instalado."
+ok "Node.js instalado com sucesso."
 
 # ####################################################################################
 # ///// UV (Astral)
