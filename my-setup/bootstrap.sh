@@ -675,6 +675,9 @@ ok "Wallpaper configurado."
 
 log "Áudio (PipeWire)"
 
+step "Removendo conflitos antigos de áudio..."
+sudo pacman -Rdd --noconfirm jack2 2>/dev/null || true
+
 step "Instalando PipeWire e ferramentas..."
 sudo pacman -S --needed --noconfirm \
     pipewire \
