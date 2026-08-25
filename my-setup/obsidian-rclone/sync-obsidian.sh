@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Espera da Internet
+timeout 15s bash -c 'until ping -c 1 1.1.1.1 &>/dev/null; do sleep 1; done'
+
 LOCAL_DIR="$HOME/documents/ocarina-of-time/"
 REMOTE="mydrive:OCARINA OF TIME/VAULT"
 LOG_FILE="$HOME/rclone_sync.log"
