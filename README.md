@@ -9,7 +9,7 @@ This repository contains my personal Arch Linux configuration files (`dotfiles`)
 ### System and Compositor
 | Component | Tool |
 |-----------|------|
-| Package Manager (`pacman.conf`) | Parallel downloads enabled (10) + `ILoveCandy` easter egg |
+| Package Manager (`pacman.conf`) | Parallel downloads enabled (5) + `ILoveCandy` easter egg |
 | Compositor | Hyprland |
 | Session Manager | UWSM |
 | Login Manager | Greetd + Tuigreet |

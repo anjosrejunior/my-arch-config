@@ -14,14 +14,14 @@ Existem três configurações que eu faço no meu pacman.conf:
 
 1. **Color**: Caso ele venha comentado descomente e caso você não encontre escreva `Color`
 2. **IloveCandy**: Caso ele venha comentado descomente e caso você não encontre escreva `IloveCandy`
-3. **ParallelDownloads**: Ele sempre vem escrito por padrão normalmente 5, mude o número para 10
+3. **ParallelDownloads**: Ele sempre vem escrito por padrão 5 mantenha por que esse é o Sspot.
 
 Exemplo:
 
 ```conf
 Color
 ILoveCandy
-ParallelDownloads=10
+ParallelDownloads=5
 ```
 
 # Exemplo de `pacman.conf`
@@ -58,7 +58,7 @@ ILoveCandy
 #NoProgressBar
 CheckSpace
 #VerbosePkgLists
-ParallelDownloads = 10
+ParallelDownloads = 5
 DownloadUser = alpm
 #DisableSandboxFilesystem
 #DisableSandboxSyscalls
