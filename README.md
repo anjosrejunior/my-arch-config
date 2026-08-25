@@ -115,6 +115,7 @@ cd my-arch-config
 ```
 my-arch-config/
 ├── my-setup/
+│   ├── greetd/                     # Greetd (Display Manager)
 │   ├── hypr/                     # Hyprpaper configurations (hyprpaper.conf)
 │   ├── obs/                      # Obs configurations
 │   ├── obsidian-rclone/          # Obsidian sync script and systemd service
