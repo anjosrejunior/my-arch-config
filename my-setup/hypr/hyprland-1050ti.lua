@@ -61,7 +61,12 @@ local zedcode = "zeditor"
 -- Or execute your favorite apps at launch like this:
 --
 hl.on("hyprland.start", function ()
+    -- Atualiza variáveis de ambiente no systemd/dbus
     hl.exec_cmd("dbus-update-activation-environment --systemd --all")
+
+    -- Inicia Waybar e Hyprpaper gerenciados pelo UWSM
+    hl.exec_cmd("uwsm app -- waybar")
+    hl.exec_cmd("uwsm app -- hyprpaper")
 end)
 
 -------------------------------
