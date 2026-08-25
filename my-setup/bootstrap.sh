@@ -176,8 +176,11 @@ done
 
 log "Atualização do Sistema e Pacotes Base"
 
-step "Atualizando o sistema..."
-sudo pacman -Syu --noconfirm
+step "Atualizando lista de mirrors (Brasil)..."
+curl -s "https://archlinux.org/mirrorlist/?country=BR&protocol=https&use_mirror_status=on" | sed 's/^#Server/Server/' | sudo tee /etc/pacman.d/mirrorlist > /dev/null
+
+step "Atualizando o sistema e bases de dados..."
+sudo pacman -Syyu --noconfirm
 
 step "Instalando editor de terminal e fontes..."
 sudo pacman -S --needed --noconfirm \
