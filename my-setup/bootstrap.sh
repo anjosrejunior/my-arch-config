@@ -98,11 +98,6 @@ SUDO_REFRESH_PID=$!
 # Mata o processo do sudo-refresh ao sair do script (mesmo em caso de erro)
 trap 'kill "$SUDO_REFRESH_PID" 2>/dev/null || true' EXIT
 
-# ---- Helper: verifica se o systemd --user está disponível ----
-user_systemd_ok() {
-    [ -d "/run/user/$(id -u)/systemd" ] && systemctl --user is-system-running >/dev/null 2>&1
-}
-
 cleanup() {
     if [ -n "${SUDO_REFRESH_PID:-}" ]; then
         kill -- "$SUDO_REFRESH_PID" 2>/dev/null || true
@@ -254,6 +249,28 @@ else
     warn "$ZSH_PATH não está em /etc/shells; shell padrão não alterado."
 fi
 
+step "Criando a pasta ~/.config e configurando o Starship..."
+
+# Garante que o diretório ~/.config existe
+mkdir -p ~/.config
+
+# Verifica se o arquivo já possui a configuração do scan_timeout
+if ! grep -q "scan_timeout" ~/.config/starship.toml 2>/dev/null; then
+    cat >> ~/.config/starship.toml << 'EOF'
+# Aumenta o tempo limite de varredura para máquinas mais antigas
+scan_timeout = 500
+command_timeout = 500
+
+# Otimizações de desempenho para o Git em máquinas mais fracas
+# [git_status]
+# untracked = false
+# modified = false
+EOF
+    ok "Configurações do Starship salvas em ~/.config/starship.toml."
+else
+    ok "~/.config/starship.toml já está configurado."
+fi
+
 # ####################################################################################
 # ///// FIREWALL
 # ####################################################################################
@@ -297,6 +314,9 @@ sudo pacman -S --needed --noconfirm networkmanager wireguard-tools
 
 step "Ativando NetworkManager no Systemd..."
 sudo systemctl enable --now NetworkManager
+
+step "Desativando espera de rede no boot..."
+sudo systemctl disable NetworkManager-wait-online.service
 
 ok "NetworkManager configurado."
 
@@ -552,13 +572,6 @@ else
     warn "Diretório $WAYBAR_SRC_DIR/ não encontrado; configurações do Waybar não copiadas."
 fi
 
-step "Habilitando serviço Waybar no Systemd..."
-if user_systemd_ok; then
-    systemctl --user enable waybar.service || warn "Não foi possível habilitar waybar.service."
-else
-    warn "systemd --user indisponível; waybar.service não habilitado (faça logout/login após reiniciar)."
-fi
-
 ok "Waybar configurado."
 
 # ####################################################################################
@@ -660,13 +673,6 @@ if [ -f "$HYPRPAPER_SRC" ]; then
     ok "hyprpaper.conf copiado para $HYPRPAPER_DST"
 else
     warn "hyprpaper.conf não encontrado em $HYPRPAPER_SRC"
-fi
-
-step "Ativando serviço hyprpaper no Systemd..."
-if user_systemd_ok; then
-    systemctl --user enable --now hyprpaper.service || warn "Não foi possível habilitar hyprpaper.service."
-else
-    warn "systemd --user indisponível; hyprpaper.service não habilitado (faça logout/login após reiniciar)."
 fi
 
 ok "Wallpaper configurado."
@@ -813,32 +819,6 @@ warn "Reinicie a sessão (logout/login) para o grupo docker ter efeito."
 ok "Docker configurado."
 
 # ####################################################################################
-# ///// CODE EDITOR (ZED)
-# ####################################################################################
-
-log "Zed (Code Editor)"
-
-step "Instalando Zed via Flatpak..."
-# O timeout evita falhas em downloads pesados de runtimes
-flatpak install --assumeyes flathub dev.zed.Zed
-
-ZED_CONFIG_DIR="$HOME/.var/app/dev.zed.Zed/config/zed"
-SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
-TARGET_ZED_SETTINGS="$ZED_CONFIG_DIR/settings.json"
-
-if [ -f "$SOURCE_ZED_SETTINGS" ]; then
-    step "Copiando configurações do Zed..."
-    # Cria a estrutura de pastas do Flatpak caso não exista
-    mkdir -p "$ZED_CONFIG_DIR"
-    cp "$SOURCE_ZED_SETTINGS" "$TARGET_ZED_SETTINGS"
-    ok "settings.json copiado para $TARGET_ZED_SETTINGS"
-else
-    warn "settings.json não encontrado em $SOURCE_ZED_SETTINGS"
-fi
-
-ok "Zed configurado."
-
-# ####################################################################################
 # ///// OBS STUDIO & LOOPBACK
 # ####################################################################################
 
@@ -877,12 +857,8 @@ else
 fi
 
 step "Ativando serviço no Systemd..."
-if user_systemd_ok; then
-    systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
-    systemctl --user enable --now obs-v4l2loopback.service || warn "Não foi possível ativar obs-v4l2loopback.service."
-else
-    warn "systemd --user indisponível; obs-v4l2loopback.service não ativado (faça logout/login após reiniciar)."
-fi
+systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
+systemctl --user enable --now obs-v4l2loopback.service || warn "Não foi possível ativar obs-v4l2loopback.service."
 
 ok "OBS Studio e v4l2loopback instalados e configurados."
 
@@ -932,16 +908,119 @@ sudo pacman -S --needed --noconfirm rclone
 ok "Rclone instalado."
 
 # ####################################################################################
+# ///// APPS
+# ####################################################################################
+
+log "Validação de Sistema e Instalação de Flatpaks"
+
+# Lista de pacotes (instalados em uma única chamada bulk ao Flathub para
+# reduzir a carga no servidor e evitar timeouts em máquinas mais simples).
+FLATPAKS=(
+    dev.zed.Zed
+    io.dbeaver.DBeaverCommunity
+    com.discordapp.Discord
+    com.spotify.Client
+    net.ankiweb.Anki
+    com.google.Chrome
+    app.zen_browser.zen
+    md.obsidian.Obsidian
+)
+
+# Checa se há conexão com a internet e alcance ao Flathub
+check_network() {
+    step "Verificando conexão com a internet e Flathub..."
+    while true; do
+        # Testa DNS público (Cloudflare) e resolução de nome do Flathub
+        if ping -c 1 -W 2 1.1.1.1 >/dev/null 2>&1 && ping -c 1 -W 2 flathub.org >/dev/null 2>&1; then
+            ok "Conexão com a rede estabelecida!"
+            break
+        else
+            warn "Sem conexão com a internet ou Flathub inacessível. Aguardando 10 segundos..."
+            sleep 10
+        fi
+    done
+}
+
+# Checa se há espaço livre em disco (Mínimo de 5GB livres na / ou no /var)
+check_disk_space() {
+    step "Verificando espaço em disco..."
+    local min_space_gb=5
+    # Obtém o espaço livre em KB no diretório de instalação do Flatpak (geralmente /var)
+    local free_space_kb=$(df -k /var | awk 'NR==2 {print $4}')
+    local free_space_gb=$((free_space_kb / 1024 / 1024))
+
+    if [ "$free_space_gb" -lt "$min_space_gb" ]; then
+        warn "Pouco espaço em disco! Apenas ${free_space_gb}GB disponíveis (Mínimo recomendado: ${min_space_gb}GB)."
+        return 1
+    fi
+
+    ok "Espaço em disco OK: ${free_space_gb}GB disponíveis."
+    return 0
+}
+
+# Executa as checagens preventivas
+check_network
+
+if ! check_disk_space; then
+    warn "Instalação abortada para evitar falhas por falta de espaço em disco."
+    exit 1
+fi
+
+# Loop de download tolerante a falhas e timeouts de rede
+step "Iniciando a instalação dos pacotes Flatpak..."
+attempt=1
+
+while true; do
+    echo "Baixando pacotes (Tentativa $attempt)..."
+
+    if flatpak install --assumeyes flathub "${FLATPAKS[@]}"; then
+        ok "Todos os aplicativos Flatpak foram instalados com sucesso!"
+        break
+    fi
+
+    warn "Ocorreu um timeout ou desconexão temporária."
+    
+    # Valida a rede antes de reiniciar a tentativa
+    check_network
+    
+    attempt=$((attempt + 1))
+    echo "Reiniciando download de onde parou em 5 segundos..."
+    sleep 5
+done
+
+# ####################################################################################
+# ///// CONFIGURAÇÃO PÓS-INSTALAÇÃO DOS FLATPAKS
+# ####################################################################################
+# Os flatpaks acima já foram instalados em bulk. As seções a seguir aplicam
+# apenas as permissões, overrides e scripts específicos de cada aplicativo.
+
+# ####################################################################################
+# ///// CODE EDITOR (ZED)
+# ####################################################################################
+
+log "Zed (Code Editor)"
+
+ZED_CONFIG_DIR="$HOME/.var/app/dev.zed.Zed/config/zed"
+SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
+TARGET_ZED_SETTINGS="$ZED_CONFIG_DIR/settings.json"
+
+if [ -f "$SOURCE_ZED_SETTINGS" ]; then
+    step "Copiando configurações do Zed..."
+    # Cria a estrutura de pastas do Flatpak caso não exista
+    mkdir -p "$ZED_CONFIG_DIR"
+    cp "$SOURCE_ZED_SETTINGS" "$TARGET_ZED_SETTINGS"
+    ok "settings.json copiado para $TARGET_ZED_SETTINGS"
+else
+    warn "settings.json não encontrado em $SOURCE_ZED_SETTINGS"
+fi
+
+ok "Zed configurado."
+
+# ####################################################################################
 # ///// NAVEGADORES
 # ####################################################################################
 
 log "Navegadores (Chrome e Zen)"
-
-step "Instalando Google Chrome via Flatpak..."
-flatpak install --assumeyes flathub com.google.Chrome
-
-step "Instalando Zen Browser via Flatpak..."
-flatpak install --assumeyes flathub app.zen_browser.zen
 
 step "Aplicando permissões e tema no Zen Browser e Chrome..."
 SHARED_DIR="$HOME/flatpaks-share"
@@ -950,40 +1029,7 @@ sudo flatpak override --env=GTK_THEME=Materia-dark app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" app.zen_browser.zen
 sudo flatpak override --filesystem="$SHARED_DIR" com.google.Chrome
 
-ok "Navegadores instalados."
-
-# ####################################################################################
-# ///// DBEAVER
-# ####################################################################################
-
-log "DBeaver Community"
-
-step "Instalando DBeaver via Flatpak..."
-flatpak install --assumeyes flathub io.dbeaver.DBeaverCommunity
-
-ok "DBeaver instalado."
-
-# ####################################################################################
-# ///// DISCORD
-# ####################################################################################
-
-log "Discord"
-
-step "Instalando Discord via Flatpak..."
-flatpak install --assumeyes flathub com.discordapp.Discord
-
-ok "Discord instalado."
-
-# ####################################################################################
-# ///// SPOTIFY
-# ####################################################################################
-
-log "Spotify"
-
-step "Instalando Spotify via Flatpak..."
-flatpak install --assumeyes flathub com.spotify.Client
-
-ok "Spotify instalado."
+ok "Navegadores configurados."
 
 # ####################################################################################
 # ///// ANKI
@@ -991,24 +1037,18 @@ ok "Spotify instalado."
 
 log "Anki"
 
-step "Instalando Anki via Flatpak..."
-flatpak install --assumeyes flathub net.ankiweb.Anki
-
 step "Configurando diretório de dados do Anki..."
 mkdir -p "$HOME/documents/anki/"
 flatpak override --user --filesystem="$HOME/documents/anki" net.ankiweb.Anki || warn "Falha ao configurar filesystem do Anki."
 flatpak override --user --env=ANKI_BASE="$HOME/documents/anki" net.ankiweb.Anki || warn "Falha ao configurar ANKI_BASE."
 
-ok "Anki instalado e configurado."
+ok "Anki configurado."
 
 # ####################################################################################
 # ///// OBSIDIAN
 # ####################################################################################
 
 log "Obsidian"
-
-step "Instalando Obsidian via Flatpak..."
-flatpak install --assumeyes flathub md.obsidian.Obsidian
 
 step "Criando diretórios necessários..."
 mkdir -p "$HOME/documents/ocarina-of-time/"
@@ -1040,14 +1080,10 @@ else
 fi
 
 step "Ativando serviço no Systemd..."
-if user_systemd_ok; then
-    systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
-    systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
-else
-    warn "systemd --user indisponível; obsidian-sync.service não ativado (faça logout/login após reiniciar)."
-fi
+systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
+systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
 
-ok "Obsidian instalado e sincronização configurada."
+ok "Obsidian e sincronização configurados."
 
 # ####################################################################################
 # ///// FIM
