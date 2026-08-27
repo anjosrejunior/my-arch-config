@@ -7,7 +7,8 @@
     "html": true,
     "dockerfile": true,
     "biome": true,
-    "lua": true
+    "lua": true,
+    "mermaid": true
   },
 	"icon_theme": "Symbols Icon Theme",
 	"cli_default_open_behavior": "existing_window",
