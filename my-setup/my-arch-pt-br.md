@@ -1,6 +1,6 @@
 # Meu Setup Arch Linux + Hyprland
 
-Este repositório contém meu setup pessoal de Arch Linux com Hyprland, incluindo um script de instalação automatizada (`bootstrap.sh`) e minhas configurações
+Este repositório contém meu setup pessoal de Arch Linux com Hyprland, incluindo um script orquestrador de instalação automatizada (`install.sh`) com seus scripts temáticos em `scripts/` e minhas configurações
 (dotfiles). O objetivo é reproduzir todo o ambiente de desenvolvimento e uso diário em uma máquina nova de forma rápida e consistente.
 
 ## Stack / Componentes
@@ -91,8 +91,9 @@ Execute os comandos abaixo em um terminal após a instalação base do Arch Linu
 git clone https://github.com/anjosrejunior/my-arch-config
 cd my-arch-config
 
-# 2. Execute o script principal
-./bootstrap.sh
+# 2. Execute o script principal (orquestrador)
+cd my-setup
+./install.sh
 ```
 
 > **Nota:** O script solicitará seu nome e e-mail para configurar o Git. Tenha esses dados prontos.

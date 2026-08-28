@@ -2,6 +2,9 @@
 # ///// GIT — CONFIGURAÇÃO E CHAVE SSH (GITHUB)
 # ####################################################################################
 
+# Garante a biblioteca comum carregada (funções log/ok/warn e variáveis como GIT_EMAIL).
+[ -n "${MY_SETUP_COMMON_LOADED:-}" ] || . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/common.sh"
+
 log "Verificando dependências de SSH..."
 if ! command -v ssh-keygen &> /dev/null; then
     log "Instalando OpenSSH..."

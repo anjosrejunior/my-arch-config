@@ -98,10 +98,12 @@ cd my-arch-config
 ### 2. Run the main script
 
 ```bash
-./bootstrap.sh
+cd my-setup
+./install.sh
 ```
 
 > **Note:** The script will ask for your name and email to configure Git. Have this information ready.
+> `install.sh` is an orchestrator: it activates the themed scripts in `my-setup/scripts/` in order (one per area: user input, system base, shell, network, git, flatpak, display, desktop, media, files, dev, apps).
 
 ### Post-installation
 
@@ -115,7 +117,7 @@ cd my-arch-config
 ```
 my-arch-config/
 ├── my-setup/
-│   ├── greetd/                     # Greetd (Display Manager)
+│   ├── greetd/                   # Greetd (Display Manager)
 │   ├── hypr/                     # Hyprpaper configurations (hyprpaper.conf)
 │   ├── obs/                      # Obs configurations
 │   ├── obsidian-rclone/          # Obsidian sync script and systemd service
@@ -123,12 +125,26 @@ my-arch-config/
 │   ├── rofi/                     # Rofi configurations (config.rasi, powermenu.rasi, rofi-powermenu)
 │   ├── waybar/                   # Waybar configurations (config.jsonc, style.css)
 │   ├── zed/                      # Zed configurations (settings.json)
-│   ├── bootstrap.sh              # Main installation script
+│   ├── install.sh                # Orchestrator script (activates the themed scripts below)
+│   ├── scripts/                  # Themed scripts activated in order by install.sh
+│   │   ├── lib/common.sh         # Shared helpers: logging, checklist, sudo refresh, traps
+│   │   ├── 00-user-input.sh      # Git profile + NVIDIA driver selection prompts
+│   │   ├── 01-system-base.sh     # Mirrors, system update and base packages
+│   │   ├── 02-shell.sh           # ZSH, Starship and completions
+│   │   ├── 03-network.sh         # UFW, NetworkManager/WireGuard and GNOME Keyring
+│   │   ├── 04-git.sh             # Git config and YAY (AUR helper)
+│   │   ├── 05-flatpak.sh         # Flatpak + Flathub
+│   │   ├── 06-display.sh         # Hyprland + NVIDIA (conditional), UWSM, GreetD/Tuigreet
+│   │   ├── 07-desktop.sh         # Waybar, Rofi, dark theme and wallpaper
+│   │   ├── 08-media.sh           # PipeWire, clipboard tools and OBS Studio
+│   │   ├── 09-files.sh           # Thunar, media viewers and Rclone
+│   │   ├── 10-dev.sh             # Node (NVM), UV (Astral) and Docker
+│   │   └── 11-apps.sh            # Flatpak apps install + Zed/Browsers/Anki/Obsidian config
 │   ├── my-arch-en.md             # English documentation
 │   ├── my-arch-pt-br.md          # Portuguese (Brazil) documentation
 │   └── wallpaper.jpg             # Default wallpaper
-├── scripts                     # Scripts
-├── setup-docs                  # Setup documentation
+├── scripts                       # Scripts
+├── setup-docs                    # Setup documentation
 ├── LICENSE
 └── README.md
 ```
