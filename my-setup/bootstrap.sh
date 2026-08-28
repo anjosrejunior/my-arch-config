@@ -318,6 +318,20 @@ sudo pacman -S --needed --noconfirm networkmanager wireguard-tools
 step "Ativando NetworkManager no Systemd..."
 sudo systemctl enable --now NetworkManager
 
+step "Aguardando conexão de rede..."
+if ! nm-online -q --timeout=30; then
+    error "NetworkManager não conseguiu estabelecer conexão."
+    exit 1
+fi
+
+step "Verificando resolução DNS..."
+if ! getent hosts archlinux.org >/dev/null 2>&1; then
+    error "DNS não está funcionando."
+    exit 1
+fi
+
+ok "Rede e DNS disponíveis."
+
 step "Desativando espera de rede no boot..."
 sudo systemctl disable NetworkManager-wait-online.service
 
