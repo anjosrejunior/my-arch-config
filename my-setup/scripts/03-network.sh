@@ -68,7 +68,11 @@ log "GNOME Keyring"
 step "Instalando GNOME Keyring e libsecret..."
 sudo pacman -S --needed --noconfirm gnome-keyring libsecret
 
-step "Ativando Gnome-Keyring no Systemd..."
-systemctl --user enable gnome-keyring-daemon.service
+log "GNOME Keyring"
+
+step "Ativando Sockets do Gnome-Keyring no Systemd (Global)..."
+systemctl --global enable gnome-keyring-daemon.socket
+
+ok "GNOME Keyring ativado com sucesso."
 
 ok "GNOME Keyring instalado."

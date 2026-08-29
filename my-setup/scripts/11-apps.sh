@@ -154,7 +154,6 @@ log "Obsidian"
 step "Criando diretórios necessários..."
 mkdir -p "$HOME/documents/ocarina-of-time/"
 mkdir -p "$HOME/scripts/"
-mkdir -p "$HOME/.config/systemd/user"
 mkdir -p "$BIN_DST_DIR"
 
 step "Concedendo acesso ao Vault no Flatpak..."
@@ -172,16 +171,7 @@ else
     warn "sync-obsidian.sh não encontrado em $SCRIPT_DIR/obsidian-rclone/"
 fi
 
-step "Copiando serviço systemd do Obsidian Sync..."
-if [ -f "$SCRIPT_DIR/obsidian-rclone/obsidian-sync.service" ]; then
-    cp "$SCRIPT_DIR/obsidian-rclone/obsidian-sync.service" "$HOME/.config/systemd/user/obsidian-sync.service"
-    ok "obsidian-sync.service copiado para ~/.config/systemd/user/"
-else
-    warn "obsidian-sync.service não encontrado em $SCRIPT_DIR/obsidian-rclone/"
-fi
-
-step "Ativando serviço no Systemd..."
-systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
-systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
-
+# O registro e a ativação do serviço de usuário obsidian-sync (cópia do .service
+# + systemctl --user) são feitos no post-install.sh, pois dependem de uma sessão
+# gráfica ativa.
 ok "Obsidian e sincronização configurados."

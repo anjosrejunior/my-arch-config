@@ -108,9 +108,10 @@ cd my-setup
 ### Post-installation
 
 1. **ZSH** — Log out and log back in (or restart the terminal) for ZSH to become the default shell.
-2. **Zed** — Open Zed at least once so that Flatpak generates the configuration directory structure.
-3. **Obsidian** — Configure Rclone for sync (the script copies the `sync-obsidian` binary to `~/.local/bin/` and enables the systemd service).
-4. **Docker** — Log out and log back in for the `docker` group to take effect (or run `newgrp docker`).
+2. **User services** — After the first graphical login, run `./my-setup/post-install.sh` to activate the user systemd services (GNOME Keyring, PipeWire, OBS Loopback, Obsidian Sync). These are not enabled during `install.sh` because they need an active user/graphical session.
+3. **Zed** — Open Zed at least once so that Flatpak generates the configuration directory structure.
+4. **Obsidian** — Configure Rclone for sync (the script copies the `sync-obsidian` binary to `~/.local/bin/`; the systemd service is activated by `post-install.sh`).
+5. **Docker** — Log out and log back in for the `docker` group to take effect (or run `newgrp docker`).
 
 ## 📁 Repository Structure
 
@@ -126,6 +127,7 @@ my-arch-config/
 │   ├── waybar/                   # Waybar configurations (config.jsonc, style.css)
 │   ├── zed/                      # Zed configurations (settings.json)
 │   ├── install.sh                # Orchestrator script (activates the themed scripts below)
+│   ├── post-install.sh           # Post-install: enables user systemd services (Keyring, PipeWire, OBS, Obsidian)
 │   ├── scripts/                  # Themed scripts activated in order by install.sh
 │   │   ├── lib/common.sh         # Shared helpers: logging, checklist, sudo refresh, traps
 │   │   ├── 00-user-input.sh      # Git profile + NVIDIA driver selection prompts

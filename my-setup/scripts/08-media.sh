@@ -28,6 +28,9 @@ sudo pacman -S --needed --noconfirm \
 
 ok "Áudio configurado."
 
+# A ativação dos serviços de usuário do PipeWire (systemctl --user) é feita no
+# post-install.sh, pois depende de uma sessão gráfica ativa.
+
 # ####################################################################################
 # ///// CLIPBOARD
 # ####################################################################################
@@ -53,8 +56,7 @@ echo 'options v4l2loopback video_nr=10 card_label="OBS Virtual Camera" exclusive
 echo 'v4l2loopback' | sudo tee /etc/modules-load.d/v4l2loopback.conf > /dev/null
 ok "Parâmetros do v4l2loopback salvos em /etc/modprobe.d/ e /etc/modules-load.d/"
 
-step "Criando diretórios necessários..."
-mkdir -p "$HOME/.config/systemd/user"
+step "Criando diretório de destino dos binários..."
 mkdir -p "$BIN_DST_DIR"
 
 step "Copiando script do OBS Loopback..."
@@ -69,16 +71,7 @@ else
     warn "obs-v4l2loopback.sh não encontrado em $SCRIPT_DIR/obs/"
 fi
 
-step "Copiando serviço systemd do OBS Loopback..."
-if [ -f "$SCRIPT_DIR/obs/obs-v4l2loopback.service" ]; then
-    cp "$SCRIPT_DIR/obs/obs-v4l2loopback.service" "$HOME/.config/systemd/user/obs-v4l2loopback.service"
-    ok "obs-v4l2loopback.service copiado para ~/.config/systemd/user/"
-else
-    warn "obs-v4l2loopback.service não encontrado em $SCRIPT_DIR/obs/"
-fi
-
-step "Ativando serviço no Systemd..."
-systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
-systemctl --user enable --now obs-v4l2loopback.service || warn "Não foi possível ativar obs-v4l2loopback.service."
-
+# O registro e a ativação do serviço de usuário obs-v4l2loopback (cópia do
+# .service + systemctl --user) são feitos no post-install.sh, pois dependem de
+# uma sessão gráfica ativa.
 ok "OBS Studio e v4l2loopback instalados e configurados."

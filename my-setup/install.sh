@@ -47,6 +47,9 @@ log "Configuração concluída!"
 finish_checklist
 ok "Checklist salvo em: $CHECKLIST_FILE"
 
+warn "Serviços de usuário (GNOME Keyring, PipeWire, OBS Loopback e Obsidian Sync) NÃO foram ativados."
+warn "Após o primeiro login gráfico, execute manualmente: ./post-install.sh"
+
 REBOOT=""
 while true; do
     read -rp "Reiniciar agora para aplicar as mudanças? [s/N]: " REBOOT
