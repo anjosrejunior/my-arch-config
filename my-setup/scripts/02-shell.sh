@@ -42,6 +42,10 @@ if [ -z "$SSH_AUTH_SOCK" ]; then
     eval "$(ssh-agent -s)" > /dev/null
 fi
 
+if ! ssh-add -l | grep -q "$(ssh-keygen -lf ~/.ssh/github_key | awk '{print $2}')"; then
+    ssh-add ~/.ssh/github_key 2>/dev/null
+fi
+
 # Alias do Zed
 alias zeditor='flatpak run dev.zed.Zed'
 EOF
