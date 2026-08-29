@@ -10,6 +10,3 @@ RemainAfterExit=yes
 TimeoutStopSec=300
 ExecStart=%h/.local/bin/sync-obsidian start
 ExecStop=%h/.local/bin/sync-obsidian stop
-
-[Install]
-WantedBy=graphical-session.target

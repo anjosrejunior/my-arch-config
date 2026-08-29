@@ -68,11 +68,7 @@ else
     warn "obsidian-sync.service não encontrado em $SCRIPT_DIR/obsidian-rclone/"
 fi
 
-step "Ativando serviço no Systemd..."
-systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
-systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
-
-ok "Obsidian Sync ativado."
+ok "obsidian-sync.service foi ativado"
 
 # ####################################################################################
 # ///// FIM

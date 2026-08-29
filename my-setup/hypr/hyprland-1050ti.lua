@@ -67,6 +67,7 @@ hl.on("hyprland.start", function ()
     -- Inicia Waybar e Hyprpaper gerenciados pelo UWSM
     hl.exec_cmd("uwsm app -- waybar")
     hl.exec_cmd("uwsm app -- hyprpaper")
+    hl.exec_cmd("sleep 5 && systemctl --user start obsidian-sync.service")
 end)
 
 -------------------------------
