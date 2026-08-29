@@ -38,13 +38,7 @@ source <(fzf --zsh)
 eval "$(starship init zsh)"
 
 # Inicia o ssh-agent se ainda não estiver rodando na sessão
-if [ -z "$SSH_AUTH_SOCK" ]; then
-    eval "$(ssh-agent -s)" > /dev/null
-fi
-
-if ! ssh-add -l | grep -q "$(ssh-keygen -lf ~/.ssh/github_key | awk '{print $2}')"; then
-    ssh-add ~/.ssh/github_key 2>/dev/null
-fi
+export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
 
 # Alias do Zed
 alias zeditor='flatpak run dev.zed.Zed'
@@ -93,3 +87,6 @@ EOF
 else
     ok "~/.config/starship.toml já está configurado."
 fi
+
+step "Ativando o agente SSH..."
+systemctl --user enable --now ssh-agent || warn "Não foi possível ativar agente ssh."
