@@ -22,7 +22,6 @@ FLATPAKS=(
     com.discordapp.Discord
     com.spotify.Client
     net.ankiweb.Anki
-    com.google.Chrome
     app.zen_browser.zen
     md.obsidian.Obsidian
 )
