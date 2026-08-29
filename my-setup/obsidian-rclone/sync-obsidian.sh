@@ -32,6 +32,13 @@ if [ "$ACTION" = "start" ]; then
       --log-level=INFO
 
 elif [ "$ACTION" = "stop" ]; then
+    # --- TESTE 3: VALIDAÇÃO DE SEGURANÇA LOCAL ---
+    # Verifica se os diretórios essenciais do Obsidian existem localmente antes de enviar
+    if [ ! -d "$LOCAL_DIR/.obsidian" ] || [ ! -d "$LOCAL_DIR/Notes" ]; then
+        echo "$(date '+%Y/%m/%d %H:%M:%S') ERROR: [STOP] Pastas essenciais (.obsidian ou Notes) nao foram encontradas em '$LOCAL_DIR'. Abortando sync para evitar sobrescrita/deletar dados no Drive." >> "$LOG_FILE"
+        exit 1
+    fi
+
     echo "$(date '+%Y/%m/%d %H:%M:%S') INFO: [STOP] Enviando atualizações do PC para o Drive..." >> "$LOG_FILE"
     BACKUP_DIR="mydrive:OCARINA OF TIME/BACKUP/$(date +%Y-%m-%d_%H-%M-%S)"
     
