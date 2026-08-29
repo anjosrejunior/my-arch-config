@@ -82,3 +82,22 @@ log "Pós-instalação concluída!"
 
 finish_checklist
 ok "Checklist salvo em: $CHECKLIST_FILE"
+
+REBOOT=""
+while true; do
+    read -rp "Reiniciar agora para aplicar as mudanças? [s/N]: " REBOOT
+    case "${REBOOT:-}" in
+        [sS]|[sS][iI][mM]|[yY]|[yY][eE][sS])
+            ok "Reiniciando o sistema..."
+            sudo shutdown -r now
+            break
+            ;;
+        [nN]|[nN][ãaÃoO]|"")
+            ok "Reinicialização adiada. Faça logout/login para aplicar as mudanças de sessão (zsh, docker, systemd --user)."
+            break
+            ;;
+        *)
+            warn "Resposta inválida. Use 's' (sim) ou 'n' (não)."
+            ;;
+    esac
+done
