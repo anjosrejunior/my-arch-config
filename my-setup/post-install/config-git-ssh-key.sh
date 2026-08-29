@@ -38,8 +38,8 @@ else
     chmod 644 "${SSH_KEY}.pub"
 
     # 2. Inicia o ssh-agent e adiciona a chave na memória RAM
-    eval "$(ssh-agent -s)" > /dev/null
-    echo "$SSH_PASSPHRASE" | ssh-add "$SSH_KEY" > /dev/null 2>&1
+    # eval "$(ssh-agent -s)" > /dev/null
+    # echo "$SSH_PASSPHRASE" | ssh-add "$SSH_KEY" > /dev/null 2>&1
 
     # 3. Configura o ~/.ssh/config para mapear o github.com a esta chave
     if ! grep -q "Host github.com" "$SSH_CONFIG" 2>/dev/null; then
