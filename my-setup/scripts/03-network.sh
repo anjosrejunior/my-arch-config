@@ -35,7 +35,7 @@ ok "Firewall configurado e ativado."
 log "Rede (NetworkManager + WireGuard)"
 
 step "Instalando NetworkManager e WireGuard..."
-sudo pacman -S --needed --noconfirm networkmanager wireguard-tools
+sudo pacman -S --needed --noconfirm networkmanager wireguard-tools openresolv
 
 step "Ativando NetworkManager no Systemd..."
 sudo systemctl enable --now NetworkManager

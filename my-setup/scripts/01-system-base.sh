@@ -24,6 +24,8 @@ step "Instalando editor de terminal e fontes..."
 sudo pacman -S --needed --noconfirm \
     micro \
     noto-fonts \
+    noto-fonts-cjk \
+    noto-fonts-emoji \
     ttf-nerd-fonts-symbols-common \
     ttf-jetbrains-mono-nerd
 
