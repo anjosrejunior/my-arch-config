@@ -28,10 +28,25 @@ sudo resolvconf -u
 
 **Comandos do Dia a Dia:**
 
-* **Ligar VPN:** `sudo wg-quick up proton`
-* **Desligar VPN:** `sudo wg-quick down proton`
-* **Ver Status:** `sudo wg`
-* **Checar IP:** `curl ifconfig.me`
+**Ligar VPN:** 
+```bash
+sudo wg-quick up proton
+```
+
+**Desligar VPN:** 
+```bash
+sudo wg-quick down proton
+```
+
+**Ver Status:** 
+```bash
+sudo wg
+```
+
+**Checar IP:** 
+```bash
+curl ifconfig.me
+```
 
 # Proton VPN via WireGuard com NetworkManager no Arch Linux**
 
@@ -61,7 +76,25 @@ sudo nmcli connection import type wireguard file *.conf
 
 **Comandos do Dia a Dia:**
 
-* **Ver conexões salvas:** `nmcli connection show`
-* **Ligar VPN:** `nmcli connection up NOME_DA_CONEXAO`
-* **Desligar VPN:** `nmcli connection down NOME_DA_CONEXAO`
-* **Checar IP:** `curl ifconfig.me`
+**Ver conexões salvas:**
+```bash
+nmcli connection show
+```
+
+**Ligar VPN:**
+
+```bash
+nmcli connection up NOME_DA_CONEXAO
+```
+
+**Desligar VPN:**
+
+```bash
+nmcli connection down NOME_DA_CONEXAO
+```
+
+**Checar IP:**
+
+```bash
+curl ifconfig.me
+```
