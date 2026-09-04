@@ -1,10 +1,10 @@
 # Secure Boot no Arch Linux
-> **Configuração:** Dual Boot (Arch Linux + Windows) | GRUB | sbctl | Kernels (Normal + LTS) | Placas ASUS / UEFI | Btrfs | Hyprland
+> **Configuração:** Dual Boot (Arch Linux + Windows) | GRUB | sbctl | Kernels (Normal + LTS) | UEFI | Btrfs | Hyprland
 
 ## 📌 Visão Geral
 Este guia utiliza a ferramenta **`sbctl`** (disponível no repositório oficial do Arch) para assinar o GRUB e o Kernel Linux sem depender do AUR. Ele mantém as chaves oficiais da Microsoft registradas para garantir a inicialização perfeita do **Windows 10/11** e seus anti-cheats (como Riot Vanguard / Valorant).
 
-## ⚙️ Etapa 1: Colocar a BIOS no "Setup Mode" (Placa-mãe ASUS)
+## ⚙️ Etapa 1: Colocar a BIOS no "Setup Mode"
 
 Para que o `sbctl` consiga gravar as chaves na memória da placa-mãe, ela precisa estar destravada:
 
