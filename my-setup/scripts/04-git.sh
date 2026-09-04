@@ -39,7 +39,7 @@ step "Definindo aliases..."
 git config --global alias.s "status -s"
 git config --global alias.c "commit -m"
 git config --global alias.l "log --oneline --graph --decorate --all"
-git config --global alias.status-all '!f() { find "${1:-.}" -maxdepth 3 -name ".git" -type d | while read dir; do repo=$(dirname "$dir"); if [ -n "$(git -C "$repo" status --porcelain)" ]; then echo "⚠️  $repo"; fi; done; }; f'
+git config --global alias.status-all '!f() { find "${1:-.}" -maxdepth 3 -name ".git" -type d | while read dir; do repo=$(dirname "$dir"); dirty=$(git -C "$repo" status --porcelain); unpushed=$(git -C "$repo" cherry 2>/dev/null); if [ -n "$dirty" ] || [ -n "$unpushed" ]; then msg=""; [ -n "$dirty" ] && msg="$msg ⚠️  (Sem commit)"; [ -n "$unpushed" ] && msg="$msg 🚀 (Sem push)"; echo "$repo ->$msg"; fi; done; }; f'
 
 ok "Configuração do Git aplicada com sucesso!"
 step "Nome:  $(git config --global user.name)"
