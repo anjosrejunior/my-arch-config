@@ -1,14 +1,29 @@
 {
+  /*Passo 1: Encontrar os nomes das extensões instaladas
+  
+  Abra o seu terminal no Arch e liste o conteúdo da pasta de extensões do Flatpak do Zed:
+  Bash
+  
+  ```bash
+  ls ~/.var/app/dev.zed.Zed/data/zed/extensions/installed/
+  ```
+  (Nota: Se por acaso não achar nada aí, tente também o caminho padrão do sistema nativo, que o Flatpak às vezes espelha: ls ~/.local/share/zed/extensions/installed/)
+  */
   "auto_install_extensions": {
-    "toml": true,
-    "symbols": true,
-    "min-theme": true,
-    "make": true,
-    "html": true,
-    "dockerfile": true,
+    "astro": true,
     "biome": true,
+    "dockerfile": true,
+    "emmet": true,
+    "git-firefly": true,
+    "html": true,
+    "log": true,
     "lua": true,
-    "mermaid": true
+    "make": true,
+    "mermaid": true,
+    "min-theme": true,
+    "sql": true,
+    "symbols": true,
+    "toml": true
   },
 	"icon_theme": "Symbols Icon Theme",
 	"cli_default_open_behavior": "existing_window",
