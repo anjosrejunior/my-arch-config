@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: .devcontainer/Dockerfile
     image: ai-jail:latest
-    container_name: ai-jail-dev
+    container_name: ai-jail-my-arch-config
     volumes:
       - ..:/workspace:cached
     command: /bin/sh -c "while sleep 1000; do :; done"
