@@ -1,0 +1,14 @@
+[Unit]
+Description=Sincronização do Obsidian via Rclone (KDE Plasma)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStopSec=300
+ExecStart=%h/.local/bin/sync-obsidian start
+ExecStop=%h/.local/bin/sync-obsidian stop
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Configuração de Câmeras Virtuais v4l2loopback para o OBS
+After=pipewire-pulse.service
+Wants=pipewire-pulse.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=%h/.local/bin/obs-v4l2loopback
+
+[Install]
+WantedBy=default.target
