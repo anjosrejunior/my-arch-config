@@ -2,11 +2,15 @@
 # ///// DRIVERS NVIDIA — INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
 # Instala os drivers NVIDIA 580xx quando a opção "1050ti" é escolhida em
-# 00-user-input.sh. Configura KMS/mkinitcpio e o systemd-boot (sem GRUB).
+# 00-user-input.sh. Configura KMS/mkinitcpio e o parâmetro nvidia_drm.modeset=1
+# no bootloader escolhido em 00-user-input.sh (systemd-boot ou GRUB).
 # ####################################################################################
 
 # Garante a biblioteca comum carregada (permite execução isolada do script).
 [ -n "${MY_SETUP_COMMON_LOADED:-}" ] || . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+
+# Espaço mínimo livre em /boot (MB) para o mkinitcpio -P gerar as imagens com NVIDIA.
+NVIDIA_BOOT_MIN_MB=500
 
 # ---- Funções auxiliares (prefixadas para não colidir com outros scripts) ----
 
@@ -15,6 +19,20 @@ nvidia_backup_file() {
     local backup="${file}.bak.$(date +%Y%m%d-%H%M%S)"
     sudo cp -a "$file" "$backup"
     ok "Backup criado: $backup"
+}
+
+nvidia_check_boot_space() {
+    local free_mb
+
+    # Checado antes de qualquer alteração: sem espaço, o mkinitcpio grava imagens truncadas.
+    free_mb="$(df -Pm /boot | awk 'NR==2 {print $4}')"
+
+    if [ "$free_mb" -lt "$NVIDIA_BOOT_MIN_MB" ]; then
+        err "Apenas ${free_mb} MB livres em /boot (mínimo ${NVIDIA_BOOT_MIN_MB} MB). Libere espaço (kernels antigos, backups .bak) e rode o script de novo."
+        return 1
+    fi
+
+    ok "Espaço livre em /boot: ${free_mb} MB."
 }
 
 nvidia_install_kernel_headers() {
@@ -128,13 +146,54 @@ nvidia_configure_systemd_boot() {
     fi
 }
 
+nvidia_configure_grub() {
+    local conf="/etc/default/grub"
+
+    if [ ! -f "$conf" ]; then
+        err "$conf não encontrado; o GRUB não parece estar instalado."
+        return 1
+    fi
+
+    if grep -q 'nvidia_drm\.modeset=1' "$conf"; then
+        ok "nvidia_drm.modeset=1 já presente em $conf"
+        return 0
+    fi
+
+    nvidia_backup_file "$conf"
+
+    if grep -q 'nvidia_drm\.modeset=0' "$conf"; then
+        sudo sed -i 's/nvidia_drm\.modeset=0/nvidia_drm.modeset=1/' "$conf"
+    elif grep -qE '^GRUB_CMDLINE_LINUX_DEFAULT=' "$conf"; then
+        # Acrescenta o parâmetro antes da aspa de fechamento da linha.
+        sudo sed -i -E '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"$/ nvidia_drm.modeset=1"/' "$conf"
+    else
+        echo 'GRUB_CMDLINE_LINUX_DEFAULT="nvidia_drm.modeset=1"' | sudo tee -a "$conf" > /dev/null
+    fi
+
+    if ! grep -q 'nvidia_drm\.modeset=1' "$conf"; then
+        err "Não foi possível adicionar nvidia_drm.modeset=1 em $conf; ajuste manualmente."
+        return 1
+    fi
+
+    ok "Parâmetro nvidia_drm.modeset=1 configurado em $conf"
+}
+
 nvidia_regenerate_initramfs() {
     step "Regenerando o initramfs..."
     sudo mkinitcpio -P
 
-    if command -v reinstall-kernels &>/dev/null; then
-        step "Atualizando kernels/entradas do systemd-boot..."
-        sudo reinstall-kernels || warn "Falha ao executar reinstall-kernels."
+    if [ "${BOOTLOADER_CHOICE}" = "systemd-boot" ]; then
+        if command -v reinstall-kernels &>/dev/null; then
+            step "Atualizando kernels/entradas do systemd-boot..."
+            sudo reinstall-kernels || warn "Falha ao executar reinstall-kernels."
+        fi
+    else
+        step "Regenerando /boot/grub/grub.cfg..."
+        if command -v grub-mkconfig &>/dev/null; then
+            sudo grub-mkconfig -o /boot/grub/grub.cfg
+        else
+            err "grub-mkconfig não encontrado; rode manualmente: sudo grub-mkconfig -o /boot/grub/grub.cfg"
+        fi
     fi
 }
 
@@ -155,6 +214,16 @@ nvidia_check_modeset() {
 if [ "${NVIDIA_CHOICE:-}" = "1050ti" ]; then
     log "Drivers NVIDIA (1050ti)"
 
+    if [ -z "${BOOTLOADER_CHOICE:-}" ]; then
+        err "BOOTLOADER_CHOICE não definido; a escolha do bootloader é feita em 00-user-input.sh."
+        exit 1
+    fi
+
+    step "Verificando espaço em /boot..."
+    if ! nvidia_check_boot_space; then
+        exit 1
+    fi
+
     step "Instalando headers dos kernels instalados..."
     nvidia_install_kernel_headers
 
@@ -170,12 +239,17 @@ if [ "${NVIDIA_CHOICE:-}" = "1050ti" ]; then
     step "Adicionando módulos NVIDIA ao mkinitcpio..."
     nvidia_configure_mkinitcpio
 
-    step "Configurando systemd-boot (sem GRUB)..."
-    nvidia_configure_systemd_boot
+    if [ "${BOOTLOADER_CHOICE}" = "systemd-boot" ]; then
+        step "Configurando systemd-boot..."
+        nvidia_configure_systemd_boot
+    else
+        step "Configurando GRUB..."
+        nvidia_configure_grub
+    fi
 
     nvidia_regenerate_initramfs
 
-    ok "Drivers NVIDIA 1050ti instalados."
+    ok "Drivers NVIDIA 1050ti instalados (bootloader: ${BOOTLOADER_CHOICE})."
     warn "Reinicie o sistema para carregar os drivers e aplicar o modeset."
     nvidia_check_modeset
 else

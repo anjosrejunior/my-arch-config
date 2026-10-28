@@ -1,9 +1,10 @@
 # ####################################################################################
 # ///// ENTRADA DO USUÁRIO — INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
-# Coleta o perfil do Git e a escolha de drivers NVIDIA (1050ti ou sem NVIDIA).
-# Esses valores são usados pelos scripts seguintes, ativados no mesmo processo
-# pelo install.sh. Também aceita GIT_NAME, GIT_EMAIL e NVIDIA_CHOICE via ambiente.
+# Coleta o perfil do Git, a escolha de drivers NVIDIA (1050ti ou sem NVIDIA) e o
+# bootloader (systemd-boot ou GRUB). Esses valores são usados pelos scripts seguintes,
+# ativados no mesmo processo pelo install.sh. Também aceita GIT_NAME, GIT_EMAIL,
+# NVIDIA_CHOICE e BOOTLOADER_CHOICE via ambiente.
 # ####################################################################################
 
 # Garante a biblioteca comum carregada (permite execução isolada do script).
@@ -71,6 +72,47 @@ while [ -z "${NVIDIA_CHOICE:-}" ]; do
         2)
             NVIDIA_CHOICE="1050ti"
             ok "Opção selecionada: Drivers NVIDIA (1050ti)"
+            ;;
+        *)
+            warn "Opção inválida. Digite 1 ou 2."
+            ;;
+    esac
+done
+
+# ####################################################################################
+# ///// SELEÇÃO DE BOOTLOADER
+# ####################################################################################
+
+log "Seleção de bootloader"
+
+# Valida um valor pré-selecionado via ambiente (BOOTLOADER_CHOICE).
+if [ -n "${BOOTLOADER_CHOICE:-}" ]; then
+    case "${BOOTLOADER_CHOICE}" in
+        systemd-boot|grub)
+            ok "Opção pré-selecionada: ${BOOTLOADER_CHOICE}"
+            ;;
+        *)
+            warn "BOOTLOADER_CHOICE inválido ('${BOOTLOADER_CHOICE}'). Escolha manualmente."
+            BOOTLOADER_CHOICE=""
+            ;;
+    esac
+fi
+
+while [ -z "${BOOTLOADER_CHOICE:-}" ]; do
+    echo "---------------------------------"
+    echo "1) systemd-boot"
+    echo "2) GRUB"
+    echo "---------------------------------"
+    read -rp "Escolha o bootloader [1 ou 2]: " OPTION
+
+    case "${OPTION}" in
+        1)
+            BOOTLOADER_CHOICE="systemd-boot"
+            ok "Opção selecionada: systemd-boot"
+            ;;
+        2)
+            BOOTLOADER_CHOICE="grub"
+            ok "Opção selecionada: GRUB"
             ;;
         *)
             warn "Opção inválida. Digite 1 ou 2."

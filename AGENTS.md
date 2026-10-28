@@ -16,7 +16,7 @@
 - KDE install (Arch only): `cd my-setup-kde && ./install.sh`.
 - After the first graphical login, run the matching `./post-install.sh` (user systemd services), then `./verify-services.sh` to check them.
 - `GIT_NAME` and `GIT_EMAIL` can pre-seed the Git prompts. `my-setup-kde` also honors `NVIDIA_CHOICE=1050ti|no_nvidia`; `my-setup/scripts/00-user-input.sh` currently resets `NVIDIA_CHOICE`, so review it before relying on the env var there. The reboot prompt still reads stdin.
-- `my-setup-kde/scripts/06-display.sh` with `1050ti` edits `/etc` and the systemd-boot configuration; review the script before running it.
+- `my-setup-kde/scripts/06-display.sh` with `1050ti` edits `/etc` and the bootloader configuration (systemd-boot or GRUB, chosen in the script); review the script before running it.
 
 ## Installer structure (both variants)
 
@@ -65,9 +65,11 @@ Intentional KDE differences:
   - installs `libva-nvidia-driver`, `egl-wayland` and `nvidia-580xx-dkms`/`nvidia-580xx-utils`/`lib32-nvidia-580xx-utils` via YAY;
   - writes `/etc/modprobe.d/nvidia.conf` with `options nvidia_drm modeset=1`;
   - adds the NVIDIA modules to `/etc/mkinitcpio.conf`;
-  - adds `nvidia_drm.modeset=1` to `/etc/kernel/cmdline` or to `/boot/loader/entries/*.conf` (systemd-boot), with backups;
-  - regenerates initramfs with `mkinitcpio -P` and runs `reinstall-kernels` when available;
-  - **never edits GRUB**.
+  - checks at least 500 MB free in `/boot` before changing anything (the `/boot` partition is small and `mkinitcpio -P` fails silently-ish when it fills up);
+  - `00-user-input.sh` asks which bootloader to use (menu `1) systemd-boot 2) GRUB`, or `BOOTLOADER_CHOICE=systemd-boot|grub` via env), right after the NVIDIA choice;
+  - for systemd-boot: adds `nvidia_drm.modeset=1` to `/etc/kernel/cmdline` or `/boot/loader/entries/*.conf`, with backups, and runs `reinstall-kernels` when available;
+  - for GRUB: adds `nvidia_drm.modeset=1` to `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`, with a backup, and regenerates `/boot/grub/grub.cfg` with `grub-mkconfig`;
+  - regenerates initramfs with `mkinitcpio -P`.
 - User services (`obs-v4l2loopback`, `obsidian-sync`) use `default.target`; `post-install.sh` also enables PipeWire and `ssh-agent`.
 - Flatpaks: Zed, DBeaver, Discord, Spotify, Anki, Zen, Obsidian and Chrome. Overrides cover the shared folder, Anki base and Obsidian vault.
 - Assets live in `my-setup-kde/{zed,obs,obsidian-rclone}/`.
