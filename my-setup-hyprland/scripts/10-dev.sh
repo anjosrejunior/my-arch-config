@@ -61,15 +61,6 @@ else
     step "Instalando Node.js 24..."
     nvm install 24 || { err "Falha ao instalar Node.js 24 via NVM."; exit 1; }
 
-    step "Ativando pnpm via Corepack..."
-    if command -v corepack &>/dev/null; then
-        export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-        corepack enable pnpm
-        ok "pnpm ativado via Corepack."
-    else
-        warn "Corepack não encontrado; pnpm não ativado."
-    fi
-
     ok "Node.js instalado com sucesso."
 fi
 
@@ -86,6 +77,17 @@ EOF
     ok "NVM adicionado ao ~/.zshrc."
 else
     ok "~/.zshrc já carrega o NVM."
+fi
+
+# Os atalhos do pnpm ficam na pasta bin do Node ativo, por isso roda fora do bloco de instalação
+# (a máquina pode já ter Node, e o pnpm precisa existir mesmo assim).
+step "Ativando pnpm via Corepack..."
+if command -v corepack &>/dev/null; then
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    corepack enable pnpm
+    ok "pnpm ativado via Corepack."
+else
+    warn "Corepack não encontrado; pnpm não ativado."
 fi
 
 # ####################################################################################
