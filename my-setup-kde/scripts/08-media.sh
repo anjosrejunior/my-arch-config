@@ -1,7 +1,8 @@
 # ####################################################################################
 # ///// MÍDIA E CAPTURA — INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
-# Instala PipeWire, wl-clipboard e OBS Studio com v4l2loopback.
+# Instala PipeWire, plasma-pa (controle de volume do Plasma), wl-clipboard, Spectacle
+# (captura de tela) e OBS Studio com v4l2loopback.
 # ####################################################################################
 
 # Garante a biblioteca comum carregada (permite execução isolada do script).
@@ -22,12 +23,24 @@ sudo pacman -S --needed --noconfirm \
     pipewire-alsa \
     pipewire-pulse \
     pipewire-jack \
-    wireplumber
+    wireplumber \
+    plasma-pa
 
 ok "Áudio configurado."
 
 # A ativação dos serviços de usuário do PipeWire (systemctl --user) é feita no
 # post-install.sh, pois depende de uma sessão gráfica ativa.
+
+# ####################################################################################
+# ///// CAPTURA DE TELA (SPECTACLE)
+# ####################################################################################
+
+log "Captura de Tela (Spectacle)"
+
+step "Instalando Spectacle e codecs de imagem..."
+sudo pacman -S --needed --noconfirm spectacle kimageformats qt6-imageformats
+
+ok "Spectacle instalado."
 
 # ####################################################################################
 # ///// CLIPBOARD

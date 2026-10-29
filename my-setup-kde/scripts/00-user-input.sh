@@ -1,10 +1,11 @@
 # ####################################################################################
 # ///// ENTRADA DO USUÁRIO — INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
-# Coleta o perfil do Git, a escolha de drivers NVIDIA (1050ti ou sem NVIDIA) e o
-# bootloader (systemd-boot ou GRUB). Esses valores são usados pelos scripts seguintes,
-# ativados no mesmo processo pelo install.sh. Também aceita GIT_NAME, GIT_EMAIL,
-# NVIDIA_CHOICE e BOOTLOADER_CHOICE via ambiente.
+# Coleta o perfil do Git, a escolha de drivers NVIDIA (1050ti ou sem NVIDIA), o
+# bootloader (systemd-boot ou GRUB) e os dados das chaves GPG e SSH. Esses valores
+# são usados pelos scripts seguintes, ativados no mesmo processo pelo install.sh.
+# Também aceita GIT_NAME, GIT_EMAIL, NVIDIA_CHOICE, BOOTLOADER_CHOICE, GPG_CHOICE e
+# SSH_CHOICE (yes|no) via ambiente.
 # ####################################################################################
 
 # Garante a biblioteca comum carregada (permite execução isolada do script).
@@ -119,3 +120,51 @@ while [ -z "${BOOTLOADER_CHOICE:-}" ]; do
             ;;
     esac
 done
+
+# ####################################################################################
+# ///// CHAVES GPG E SSH
+# ####################################################################################
+
+log "Seleção de chaves GPG e SSH"
+
+# Pergunta sim/não e grava "yes" ou "no" na variável cujo nome é o segundo argumento.
+ask_yes_no() {
+    local pergunta="$1"
+    local resposta
+
+    while true; do
+        read -rp "$pergunta [s/N]: " resposta
+        case "${resposta:-}" in
+            [sS]|[sS][iI][mM])
+                printf -v "$2" '%s' "yes"
+                return 0
+                ;;
+            [nN]|[nN][aAãÃ][oO]|"")
+                printf -v "$2" '%s' "no"
+                return 0
+                ;;
+            *)
+                warn "Resposta inválida. Use 's' (sim) ou 'n' (não)."
+                ;;
+        esac
+    done
+}
+
+# Pergunta só se o valor não veio pré-selecionado via ambiente (GPG_CHOICE).
+[ -n "${GPG_CHOICE:-}" ] || ask_yes_no "Criar chave GPG?" GPG_CHOICE
+
+if [ "$GPG_CHOICE" = "yes" ]; then
+    read -rp "Nome para a chave GPG [$GIT_NAME]: " GPG_NAME
+    GPG_NAME="${GPG_NAME:-$GIT_NAME}"
+
+    read -rp "E-mail para a chave GPG [$GIT_EMAIL]: " GPG_EMAIL
+    GPG_EMAIL="${GPG_EMAIL:-$GIT_EMAIL}"
+
+    ok "Chave GPG será criada para: $GPG_NAME <$GPG_EMAIL>"
+fi
+
+[ -n "${SSH_CHOICE:-}" ] || ask_yes_no "Gerar chave SSH para o GitHub?" SSH_CHOICE
+
+if [ "$SSH_CHOICE" = "yes" ]; then
+    ok "Chave SSH para o GitHub será gerada com o e-mail do Git: $GIT_EMAIL"
+fi

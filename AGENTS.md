@@ -58,7 +58,7 @@ Intentional KDE differences:
 
 - Apps/dev/shell variant: scripts `00, 01, 02, 04, 05, 06, 08, 09, 10, 11`.
 - There are intentionally no `03-network.sh` or `07-desktop.sh` scripts; do not renumber the existing scripts to fill the gaps.
-- No Hyprland, Waybar, Rofi, Hyprpaper, greetd, UWSM, wallpaper, Materia-dark or `gsettings` theme setup.
+- No Hyprland, Waybar, Rofi, Hyprpaper, greetd, UWSM, wallpaper, Materia-dark or `gsettings` theme setup. The only theme setup is Breeze Dark via `plasma-apply-colorscheme`/`plasma-apply-lookandfeel` in `post-install.sh`.
 - Uses KDE-native tools (Dolphin, Ark, plasma-pa, Spectacle) for file management, archives, audio and screenshots. `kitty` is installed as the terminal.
 - `06-display.sh` handles only the optional NVIDIA 1050ti drivers:
   - installs headers for the kernels present;
@@ -67,11 +67,12 @@ Intentional KDE differences:
   - adds the NVIDIA modules to `/etc/mkinitcpio.conf`;
   - checks at least 500 MB free in `/boot` before changing anything (the `/boot` partition is small and `mkinitcpio -P` fails silently-ish when it fills up);
   - `00-user-input.sh` asks which bootloader to use (menu `1) systemd-boot 2) GRUB`, or `BOOTLOADER_CHOICE=systemd-boot|grub` via env), right after the NVIDIA choice;
+  - `00-user-input.sh` also asks whether to create a GPG key (name/email default to the Git profile; `GPG_CHOICE=yes|no` via env) and an SSH key for GitHub (`SSH_CHOICE=yes|no`); `04-git.sh` creates them;
   - for systemd-boot: adds `nvidia_drm.modeset=1` to `/etc/kernel/cmdline` or `/boot/loader/entries/*.conf`, with backups, and runs `reinstall-kernels` when available;
   - for GRUB: adds `nvidia_drm.modeset=1` to `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`, with a backup, and regenerates `/boot/grub/grub.cfg` with `grub-mkconfig`;
   - regenerates initramfs with `mkinitcpio -P`.
-- User services (`obs-v4l2loopback`, `obsidian-sync`) use `default.target`; `post-install.sh` also enables PipeWire and `ssh-agent`.
-- Flatpaks: Zed, DBeaver, Discord, Spotify, Anki, Zen, Obsidian and Chrome. Overrides cover the shared folder, Anki base and Obsidian vault.
+- User services (`obs-v4l2loopback`, `obsidian-sync`) use `default.target`; `post-install.sh` also enables PipeWire and `ssh-agent`, and applies Breeze Dark.
+- Flatpaks: Zed, DBeaver, Discord, Spotify, Anki, Zen, Obsidian, Chrome and Bitwarden. Overrides cover the shared folder, Anki base and Obsidian vault.
 - Assets live in `my-setup-kde/{zed,obs,obsidian-rclone}/`.
 
 ## Layout

@@ -3,8 +3,8 @@
 # ///// POST INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
 # Pós-instalação: ativa no Systemd os serviços de usuário que dependem de uma
-# sessão gráfica ativa (PipeWire, SSH Agent, OBS Loopback e Obsidian Sync).
-# Execute APÓS o primeiro login gráfico no KDE Plasma.
+# sessão gráfica ativa (PipeWire, SSH Agent, OBS Loopback e Obsidian Sync) e aplica
+# o tema Breeze Dark. Execute APÓS o primeiro login gráfico no KDE Plasma.
 # ####################################################################################
 
 set -Eeuo pipefail
@@ -36,6 +36,20 @@ step "Ativando o agente SSH..."
 systemctl --user enable --now ssh-agent || warn "Não foi possível ativar o agente ssh."
 
 ok "Agente SSH ativado."
+
+# ####################################################################################
+# ///// TEMA BREEZE DARK
+# ####################################################################################
+
+log "Tema Breeze Dark"
+
+step "Aplicando esquema de cores Breeze Dark..."
+plasma-apply-colorscheme BreezeDark || warn "Não foi possível aplicar o esquema de cores Breeze Dark."
+
+step "Aplicando o tema global Breeze Dark..."
+plasma-apply-lookandfeel -a org.kde.breezedark.desktop || warn "Não foi possível aplicar o tema global Breeze Dark."
+
+ok "Tema Breeze Dark aplicado."
 
 # ####################################################################################
 # ///// OBS STUDIO & LOOPBACK

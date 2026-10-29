@@ -2,7 +2,7 @@
 # ///// SISTEMA BASE — INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
 # Atualiza o sistema e instala pacotes base usados no desktop: editor de
-# terminal, Kitty, fontes e monitor de sistema.
+# terminal, Kitty, fontes, monitor de sistema e NetworkManager.
 # ####################################################################################
 
 # Garante a biblioteca comum carregada (permite execução isolada do script).
@@ -42,3 +42,18 @@ step "Instalando btop..."
 sudo pacman -S --needed --noconfirm btop
 
 ok "btop instalado."
+
+# ####################################################################################
+# ///// REDE (NETWORKMANAGER)
+# ####################################################################################
+
+log "Rede (NetworkManager)"
+
+step "Instalando NetworkManager, applet do Plasma e suporte a modem e Wi-Fi..."
+sudo pacman -S --needed --noconfirm networkmanager plasma-nm modemmanager usb_modeswitch wpa_supplicant
+
+# O "enable --now" já inicia o serviço; um restart logo depois derrubaria a conexão atual.
+step "Ativando NetworkManager no Systemd..."
+sudo systemctl enable --now NetworkManager
+
+ok "NetworkManager instalado e ativado."

@@ -18,6 +18,7 @@ log "Validação de Sistema e Instalação de Flatpaks"
 # reduzir a carga no servidor e evitar timeouts em máquinas mais simples.
 FLATPAKS=(
     app.zen_browser.zen
+    com.bitwarden.desktop
     com.calibre_ebook.calibre
     com.discordapp.Discord
     com.google.Chrome
