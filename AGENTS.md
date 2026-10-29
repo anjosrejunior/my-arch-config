@@ -3,7 +3,7 @@
 ## What this repo is
 
 - Personal Arch Linux dotfiles and reinstall automation with two variants:
-  - `my-setup/` — Arch + Hyprland, full desktop setup.
+  - `my-setup-hyprland/` — Arch + Hyprland, full desktop setup.
   - `my-setup-kde/` — Arch + KDE Plasma, apps/dev/shell-only variant (no Hyprland).
 - There is no application build, package manifest, test suite, lint config, or CI.
 - Each variant has its own `install.sh` entrypoint; the numbered scripts are the source of truth over prose in `README.md` / `setup-docs/`, which can be stale.
@@ -12,10 +12,10 @@
 ## Verification
 
 - No tests or linter are configured. For shell edits, run `bash -n <file>` (and if available, `shellcheck <file>`).
-- Hyprland install (Arch only): `cd my-setup && ./install.sh`.
+- Hyprland install (Arch only): `cd my-setup-hyprland && ./install.sh`.
 - KDE install (Arch only): `cd my-setup-kde && ./install.sh`.
 - After the first graphical login, run the matching `./post-install.sh` (user systemd services), then `./verify-services.sh` to check them.
-- `GIT_NAME` and `GIT_EMAIL` can pre-seed the Git prompts. `my-setup-kde` also honors `NVIDIA_CHOICE=1050ti|no_nvidia`; `my-setup/scripts/00-user-input.sh` currently resets `NVIDIA_CHOICE`, so review it before relying on the env var there. The reboot prompt still reads stdin.
+- `GIT_NAME` and `GIT_EMAIL` can pre-seed the Git prompts. `my-setup-kde` also honors `NVIDIA_CHOICE=1050ti|no_nvidia`; `my-setup-hyprland/scripts/00-user-input.sh` currently resets `NVIDIA_CHOICE`, so review it before relying on the env var there. The reboot prompt still reads stdin.
 - `my-setup-kde/scripts/06-display.sh` with `1050ti` edits `/etc` and the bootloader configuration (systemd-boot or GRUB, chosen in the script); review the script before running it.
 
 ## Installer structure (both variants)
@@ -27,27 +27,26 @@
 - Anything needing a graphical user session (`systemctl --user`, `gsettings`) belongs in `post-install.sh`, not `install.sh`.
 - Repo-to-install naming convention: source scripts keep `.sh`, but installed commands drop it into `~/.local/bin` (e.g. `obs-v4l2loopback.sh` -> `obs-v4l2loopback`, `sync-obsidian.sh` -> `sync-obsidian`). The `ExecStart=` paths in the service files rely on the installed names.
 - `10-dev.sh` pins NVM and UV versions **and SHA-256 checksums**; bump the version and checksum together or installs abort.
-- `my-setup/post-install/config-git-ssh-key.sh` is not called by either installer and is not executable. It also resolves `common.sh` via `../../scripts/lib/`, which is wrong from `post-install/`; source `../scripts/lib/common.sh` when running it.
+- `my-setup-hyprland/post-install/config-git-ssh-key.sh` is not called by either installer and is not executable. It also resolves `common.sh` via `../../scripts/lib/`, which is wrong from `post-install/`; source `../scripts/lib/common.sh` when running it.
 
 ### Shared files across variants
 
+Configuration identical in both variants lives once in `common/` at the repo root (`common/zed/settings.json`, `common/obs/obs-v4l2loopback.sh`, `common/obsidian-rclone/sync-obsidian.sh`). The scripts read it through `COMMON_DIR`, defined in `scripts/lib/common.sh` as `$SCRIPT_DIR/../common`. Edit these files only in `common/`.
+
 Keep these in sync unless a variant-specific difference is intentional:
 
-- `scripts/lib/common.sh` (exact copy in both variants).
+- `scripts/lib/common.sh` (exact copy in both variants, including the `COMMON_DIR` line).
 - `scripts/10-dev.sh` versions and SHA-256 checksums.
-- `zed/settings.json`.
-- `obs/obs-v4l2loopback.sh`.
-- `obsidian-rclone/sync-obsidian.sh`.
 - The ZSH/Starship block in `02-shell.sh`.
 
 Intentional KDE differences:
 
-- `obs-v4l2loopback.service` and `obsidian-sync.service` use `default.target`, not `graphical-session.target`.
-- `02-shell.sh` leaves `ssh-agent` activation to `post-install.sh`; `my-setup` activates it during install.
+- `obs-v4l2loopback.service` and `obsidian-sync.service` use `default.target`, not `graphical-session.target`. Service files stay per variant in `obs/` and `obsidian-rclone/`, not in `common/`.
+- `02-shell.sh` leaves `ssh-agent` activation to `post-install.sh`; `my-setup-hyprland` activates it during install.
 - `11-apps.sh` adds Chrome to the Flatpak list and does not apply the `GTK_THEME=Materia-dark` override.
 - `06-display.sh` handles only NVIDIA drivers, not Hyprland/UWSM/greetd.
 
-## my-setup (Arch + Hyprland)
+## my-setup-hyprland (Arch + Hyprland)
 
 - Full installation: scripts `00` through `11`.
 - Hyprland uses the Lua config (`hyprland.lua`), not `hyprland.conf`. `06-display.sh` copies `hyprland-1050ti.lua` when `NVIDIA_CHOICE=1050ti`; keep both variants in sync (currently they differ only by the NVIDIA env block).
@@ -73,11 +72,12 @@ Intentional KDE differences:
   - regenerates initramfs with `mkinitcpio -P`.
 - User services (`obs-v4l2loopback`, `obsidian-sync`) use `default.target`; `post-install.sh` also enables PipeWire and `ssh-agent`, and applies Breeze Dark.
 - Flatpaks: Zed, DBeaver, Discord, Spotify, Anki, Zen, Obsidian, Chrome and Bitwarden. Overrides cover the shared folder, Anki base and Obsidian vault.
-- Assets live in `my-setup-kde/{zed,obs,obsidian-rclone}/`.
+- Shared assets (`zed`, `obs`, `obsidian-rclone`) live in `common/`, not in `my-setup-kde/`.
 
 ## Layout
 
-- `my-setup/` — Hyprland installer plus deployed configs (`hypr/`, `waybar/`, `rofi/`, `zed/`, `greetd/`, service files).
-- `my-setup-kde/` — KDE installer plus `scripts/`, `scripts/lib/common.sh`, `zed/`, `obs/`, `obsidian-rclone/`, `install.sh`, `post-install.sh`, `verify-services.sh`.
+- `common/` — configs shared by both variants: `zed/settings.json`, `obs/obs-v4l2loopback.sh`, `obsidian-rclone/sync-obsidian.sh`.
+- `my-setup-hyprland/` — Hyprland installer plus deployed configs (`hypr/`, `waybar/`, `rofi/`, `greetd/`, service files).
+- `my-setup-kde/` — KDE installer plus `scripts/`, `scripts/lib/common.sh`, `obs/` and `obsidian-rclone/` (service files only), `install.sh`, `post-install.sh`, `verify-services.sh`.
 - `setup-docs/` — per-topic manual setup notes (pacman, NVIDIA, greetd, secure boot, etc.).
 - `scripts/` — one-off helper scripts, separate from the installers.

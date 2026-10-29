@@ -71,12 +71,12 @@ step "Criando diretório de destino dos binários..."
 mkdir -p "$BIN_DST_DIR"
 
 step "Copiando script do OBS Loopback..."
-if [ -f "$SCRIPT_DIR/obs/obs-v4l2loopback.sh" ]; then
-    cp "$SCRIPT_DIR/obs/obs-v4l2loopback.sh" "$BIN_DST_DIR/obs-v4l2loopback"
+if [ -f "$COMMON_DIR/obs/obs-v4l2loopback.sh" ]; then
+    cp "$COMMON_DIR/obs/obs-v4l2loopback.sh" "$BIN_DST_DIR/obs-v4l2loopback"
     chmod +x "$BIN_DST_DIR/obs-v4l2loopback"
     ok "obs-v4l2loopback.sh copiado e tornado executável em $BIN_DST_DIR/obs-v4l2loopback"
 else
-    warn "obs-v4l2loopback.sh não encontrado em $SCRIPT_DIR/obs/"
+    warn "obs-v4l2loopback.sh não encontrado em $COMMON_DIR/obs/"
 fi
 
 # O registro e a ativação do serviço de usuário obs-v4l2loopback (cópia do

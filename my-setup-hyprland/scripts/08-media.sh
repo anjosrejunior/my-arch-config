@@ -60,15 +60,15 @@ step "Criando diretório de destino dos binários..."
 mkdir -p "$BIN_DST_DIR"
 
 step "Copiando script do OBS Loopback..."
-if [ -f "$SCRIPT_DIR/obs/obs-v4l2loopback.sh" ]; then
+if [ -f "$COMMON_DIR/obs/obs-v4l2loopback.sh" ]; then
     # Preserva a extensão .sh no código-fonte para que editores (ex: Zed) identifiquem a sintaxe e o ícone do Shell Script.
     # No destino ($BIN_DST_DIR), a extensão é removida para seguir a convenção POSIX/Linux de comandos binários
     # e simplificar a chamada no Systemd e no terminal (ex: rodar apenas 'obs-v4l2loopback' em vez de 'obs-v4l2loopback.sh').
-    cp "$SCRIPT_DIR/obs/obs-v4l2loopback.sh" "$BIN_DST_DIR/obs-v4l2loopback"
+    cp "$COMMON_DIR/obs/obs-v4l2loopback.sh" "$BIN_DST_DIR/obs-v4l2loopback"
     chmod +x "$BIN_DST_DIR/obs-v4l2loopback"
     ok "obs-v4l2loopback.sh copiado e tornado executável em $BIN_DST_DIR/obs-v4l2loopback"
 else
-    warn "obs-v4l2loopback.sh não encontrado em $SCRIPT_DIR/obs/"
+    warn "obs-v4l2loopback.sh não encontrado em $COMMON_DIR/obs/"
 fi
 
 # O registro e a ativação do serviço de usuário obs-v4l2loopback (cópia do

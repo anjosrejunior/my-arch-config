@@ -98,7 +98,7 @@ done
 log "Zed (Code Editor)"
 
 ZED_CONFIG_DIR="$HOME/.var/app/dev.zed.Zed/config/zed"
-SOURCE_ZED_SETTINGS="$SCRIPT_DIR/zed/settings.json"
+SOURCE_ZED_SETTINGS="$COMMON_DIR/zed/settings.json"
 TARGET_ZED_SETTINGS="$ZED_CONFIG_DIR/settings.json"
 
 if [ -f "$SOURCE_ZED_SETTINGS" ]; then
@@ -154,12 +154,12 @@ step "Concedendo acesso ao Vault no Flatpak..."
 flatpak override --user --filesystem="$HOME/documents/ocarina-of-time" md.obsidian.Obsidian || warn "Falha ao configurar filesystem do Obsidian."
 
 step "Copiando script de sincronização do Rclone..."
-if [ -f "$SCRIPT_DIR/obsidian-rclone/sync-obsidian.sh" ]; then
-    cp "$SCRIPT_DIR/obsidian-rclone/sync-obsidian.sh" "$BIN_DST_DIR/sync-obsidian"
+if [ -f "$COMMON_DIR/obsidian-rclone/sync-obsidian.sh" ]; then
+    cp "$COMMON_DIR/obsidian-rclone/sync-obsidian.sh" "$BIN_DST_DIR/sync-obsidian"
     chmod +x "$BIN_DST_DIR/sync-obsidian"
     ok "sync-obsidian.sh copiado para $BIN_DST_DIR/sync-obsidian"
 else
-    warn "sync-obsidian.sh não encontrado em $SCRIPT_DIR/obsidian-rclone/"
+    warn "sync-obsidian.sh não encontrado em $COMMON_DIR/obsidian-rclone/"
 fi
 
 # O registro e a ativação do serviço de usuário obsidian-sync (cópia do .service

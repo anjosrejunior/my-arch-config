@@ -17,6 +17,8 @@ MY_SETUP_COMMON_LOADED=1
 # common.sh fica em <my-setup>/scripts/lib/; SCRIPT_DIR é a pasta my-setup.
 COMMON_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_DIR="$(cd "$COMMON_LIB_DIR/../.." && pwd)"
+# Configurações compartilhadas entre as variantes (zed, obs, obsidian-rclone) ficam em <repo>/common/.
+COMMON_DIR="$SCRIPT_DIR/../common"
 BIN_DST_DIR="$HOME/.local/bin"
 
 # ---- Funções de saída formatada ----
