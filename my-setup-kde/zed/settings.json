@@ -39,6 +39,12 @@
 		"light": "One Light",
 		"dark": "Min Dark (Blurred)"
 	},
+	"theme_overrides": {
+    "Min Dark (Blurred)": {
+        "panel.background": "#1b1b1bff",
+        "editor.background": "#1b1b1bcc"
+    }
+	},
 	"minimap": {
 		"show": "never"
 	},
