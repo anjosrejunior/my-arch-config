@@ -35,7 +35,6 @@ log "Visualizadores e Reprodutores de Mídia"
 
 step "Instalando visualizadores de imagem, documentos e reprodutores..."
 sudo pacman -S --needed --noconfirm \
-    mpv \
     ffmpeg \
     gwenview \
     okular \
