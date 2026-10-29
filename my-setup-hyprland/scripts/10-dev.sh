@@ -73,6 +73,21 @@ else
     ok "Node.js instalado com sucesso."
 fi
 
+# O instalador do NVM grava a inicialização no perfil do $SHELL do momento (bash, se o
+# zsh ainda não era o shell padrão). Garante o carregamento no ~/.zshrc, mesmo se o Node já existia.
+step "Garantindo que o NVM seja carregado pelo ~/.zshrc..."
+if ! grep -q "nvm.sh" ~/.zshrc 2>/dev/null; then
+    cat >> ~/.zshrc << 'EOF'
+
+# NVM (Node.js)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+EOF
+    ok "NVM adicionado ao ~/.zshrc."
+else
+    ok "~/.zshrc já carrega o NVM."
+fi
+
 # ####################################################################################
 # ///// UV (Astral)
 # ####################################################################################
