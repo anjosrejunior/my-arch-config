@@ -16,7 +16,7 @@
 - KDE install (Arch only): `cd my-setup-kde && ./install.sh`.
 - After the first graphical login, run the matching `./post-install.sh` (user systemd services), then `./verify-services.sh` to check them.
 - `GIT_NAME` and `GIT_EMAIL` can pre-seed the Git prompts. `my-setup-kde` also honors `NVIDIA_CHOICE=1050ti|no_nvidia`; `my-setup-hyprland/scripts/00-user-input.sh` currently resets `NVIDIA_CHOICE`, so review it before relying on the env var there. The reboot prompt still reads stdin.
-- `my-setup-kde/scripts/06-display.sh` with `1050ti` edits `/etc` and the bootloader configuration (systemd-boot or GRUB, chosen in the script); review the script before running it.
+- `my-setup-kde/scripts/06-graphics-drivers.sh` with `1050ti` edits `/etc` and the bootloader configuration (systemd-boot or GRUB, chosen in the script); review the script before running it.
 
 ## Installer structure (both variants)
 
@@ -26,7 +26,7 @@
 - Keep comments and user-facing messages in Portuguese (pt-BR), matching the existing scripts.
 - Anything needing a graphical user session (`systemctl --user`, `gsettings`) belongs in `post-install.sh`, not `install.sh`.
 - Repo-to-install naming convention: source scripts keep `.sh`, but installed commands drop it into `~/.local/bin` (e.g. `obs-v4l2loopback.sh` -> `obs-v4l2loopback`, `sync-obsidian.sh` -> `sync-obsidian`). The `ExecStart=` paths in the service files rely on the installed names.
-- `10-dev.sh` pins NVM and UV versions **and SHA-256 checksums**; bump the version and checksum together or installs abort.
+- `10-dev.sh` (Hyprland) and `10-dev-tools.sh` (KDE) pin NVM and UV versions **and SHA-256 checksums**; bump the version and checksum together or installs abort.
 - `my-setup-hyprland/post-install/config-git-ssh-key.sh` is not called by either installer and is not executable. It also resolves `common.sh` via `../../scripts/lib/`, which is wrong from `post-install/`; source `../scripts/lib/common.sh` when running it.
 
 ### Shared files across variants
@@ -36,15 +36,15 @@ Configuration identical in both variants lives once in `common/` at the repo roo
 Keep these in sync unless a variant-specific difference is intentional:
 
 - `scripts/lib/common.sh` (exact copy in both variants, including the `COMMON_DIR` line).
-- `scripts/10-dev.sh` versions and SHA-256 checksums.
-- The ZSH/Starship block in `02-shell.sh`.
+- `scripts/10-dev.sh` / `10-dev-tools.sh` versions and SHA-256 checksums.
+- The ZSH/Starship block in `02-shell.sh` (Hyprland) and `02-zsh-starship.sh` (KDE).
 
 Intentional KDE differences:
 
 - `obs-v4l2loopback.service` and `obsidian-sync.service` use `default.target`, not `graphical-session.target`. Service files stay per variant in `obs/` and `obsidian-rclone/`, not in `common/`.
-- `02-shell.sh` leaves `ssh-agent` activation to `post-install.sh`; `my-setup-hyprland` activates it during install.
-- `11-apps.sh` adds Chrome to the Flatpak list and does not apply the `GTK_THEME=Materia-dark` override.
-- `06-display.sh` handles only NVIDIA drivers, not Hyprland/UWSM/greetd.
+- `02-zsh-starship.sh` leaves `ssh-agent` activation to `post-install.sh`; `my-setup-hyprland` activates it during install.
+- `11-flatpak-apps.sh` adds Chrome to the Flatpak list and does not apply the `GTK_THEME=Materia-dark` override.
+- `06-graphics-drivers.sh` handles only NVIDIA drivers, not Hyprland/UWSM/greetd.
 
 ## my-setup-hyprland (Arch + Hyprland)
 
@@ -59,14 +59,16 @@ Intentional KDE differences:
 - There are intentionally no `03-network.sh` or `07-desktop.sh` scripts; do not renumber the existing scripts to fill the gaps.
 - No Hyprland, Waybar, Rofi, Hyprpaper, greetd, UWSM, wallpaper, Materia-dark or `gsettings` theme setup. The only theme setup is Breeze Dark via `plasma-apply-colorscheme`/`plasma-apply-lookandfeel` in `post-install.sh`.
 - Uses KDE-native tools (Dolphin, Ark, plasma-pa, Spectacle) for file management, archives, audio and screenshots. `kitty` is installed as the terminal.
-- `06-display.sh` handles only the optional NVIDIA 1050ti drivers:
+- KDE script names are descriptive after the number (`02-zsh-starship.sh`, `06-graphics-drivers.sh`, `11-flatpak-apps.sh`, ...); the numbers keep the order. Hyprland keeps the short names.
+- `01-system-base.sh` installs FUSE 2/3 and GTK 3 for compatibility with programs that still need them.
+- `06-graphics-drivers.sh` handles only the optional NVIDIA 1050ti drivers:
   - installs headers for the kernels present;
   - installs `libva-nvidia-driver`, `egl-wayland` and `nvidia-580xx-dkms`/`nvidia-580xx-utils`/`lib32-nvidia-580xx-utils` via YAY;
   - writes `/etc/modprobe.d/nvidia.conf` with `options nvidia_drm modeset=1`;
   - adds the NVIDIA modules to `/etc/mkinitcpio.conf`;
   - checks at least 500 MB free in `/boot` before changing anything (the `/boot` partition is small and `mkinitcpio -P` fails silently-ish when it fills up);
   - `00-user-input.sh` asks which bootloader to use (menu `1) systemd-boot 2) GRUB`, or `BOOTLOADER_CHOICE=systemd-boot|grub` via env), right after the NVIDIA choice;
-  - `00-user-input.sh` also asks whether to create a GPG key (name/email default to the Git profile; `GPG_CHOICE=yes|no` via env) and an SSH key for GitHub (`SSH_CHOICE=yes|no`); `04-git.sh` creates them;
+  - `00-user-input.sh` also asks whether to create a GPG key (name/email default to the Git profile; `GPG_CHOICE=yes|no` via env) and an SSH key for GitHub (`SSH_CHOICE=yes|no`); `04-git-aur.sh` creates them;
   - for systemd-boot: adds `nvidia_drm.modeset=1` to `/etc/kernel/cmdline` or `/boot/loader/entries/*.conf`, with backups, and runs `reinstall-kernels` when available;
   - for GRUB: adds `nvidia_drm.modeset=1` to `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`, with a backup, and regenerates `/boot/grub/grub.cfg` with `grub-mkconfig`;
   - regenerates initramfs with `mkinitcpio -P`.

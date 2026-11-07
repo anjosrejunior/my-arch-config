@@ -1,8 +1,8 @@
 # ####################################################################################
-# ///// DRIVERS NVIDIA — INSTALL ARCH LINUX + KDE PLASMA
+# ///// DRIVERS DE VÍDEO (GRÁFICOS) — INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
-# Instala os drivers NVIDIA 580xx quando a opção "1050ti" é escolhida em
-# 00-user-input.sh. Configura KMS/mkinitcpio e o parâmetro nvidia_drm.modeset=1
+# Instala os drivers de vídeo. Hoje a única opção é NVIDIA 580xx, usada quando a
+# opção "1050ti" é escolhida em 00-user-input.sh. Configura KMS/mkinitcpio e o parâmetro nvidia_drm.modeset=1
 # no bootloader escolhido em 00-user-input.sh (systemd-boot ou GRUB).
 # ####################################################################################
 
