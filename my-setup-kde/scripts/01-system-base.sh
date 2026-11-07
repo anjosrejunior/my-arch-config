@@ -2,7 +2,8 @@
 # ///// SISTEMA BASE — INSTALL ARCH LINUX + KDE PLASMA
 # ####################################################################################
 # Atualiza o sistema e instala pacotes base usados no desktop: editor de
-# terminal, Kitty, fontes, monitor de sistema e NetworkManager.
+# terminal, Kitty, fontes, bibliotecas de compatibilidade (FUSE 2/3 e GTK 3),
+# monitor de sistema e NetworkManager.
 # ####################################################################################
 
 # Garante a biblioteca comum carregada (permite execução isolada do script).
@@ -29,6 +30,14 @@ sudo pacman -S --needed --noconfirm \
     noto-fonts-emoji \
     ttf-nerd-fonts-symbols-common \
     ttf-jetbrains-mono-nerd
+
+# FUSE 2 e 3 para AppImages e programas que ainda pedem libfuse.so.2 ou .so.3.
+# GTK 3 para aplicativos que ainda não usam GTK 4 (compatibilidade).
+step "Instalando bibliotecas de compatibilidade (FUSE 2/3 e GTK 3)..."
+sudo pacman -S --needed --noconfirm \
+    fuse2 \
+    fuse3 \
+    gtk3
 
 ok "Pacotes base instalados."
 
