@@ -1,205 +1,81 @@
-# 📁 Arch Linux Dotfiles
+# Arch Linux Dotfiles
 
-This repository contains my personal Arch Linux configuration files (`dotfiles`) and manuals. The goal is to allow me to quickly replicate my workflow and environment on any machine. Feel free to copy them or use them as inspiration!
+Personal Arch Linux configuration and reinstall automation. The goal is to rebuild my workflow and environment on a fresh machine with a few commands, and to keep the setup documented. Feel free to copy it or use it as inspiration.
 
----
+## Variants
 
-## 🧭 Variants
+The project has two variants, one per desktop environment. Each has its own installer:
 
-The repository has two installers, one per desktop:
+| Variant | Folder | Focus |
+|---------|--------|-------|
+| Hyprland | `my-setup-hyprland/` | Full desktop: Hyprland, UWSM, greetd/tuigreet, Waybar, Rofi, Hyprpaper, Materia-dark theme |
+| KDE Plasma | `my-setup-kde/` | Apps, dev tools and shell on KDE Plasma, using Plasma's own tools (Dolphin, Ark, Spectacle, plasma-pa) |
 
-| Variant | Folder | What it is |
-|---------|--------|------------|
-| Hyprland | `my-setup-hyprland/` | Full desktop: Hyprland, UWSM, greetd/tuigreet, Waybar, Rofi, Hyprpaper, Materia-dark |
-| KDE Plasma | `my-setup-kde/` | Apps, dev tools and shell only, on KDE Plasma (Dolphin, Ark, Spectacle, plasma-pa, kitty). No Hyprland, no greetd |
+Both variants install the same base system, shell, Git, Flatpak, dev tools and applications, with the parts that depend on the desktop changing between them.
 
-Configs that are identical in both variants live once in `common/` (Zed `settings.json`, the OBS loopback script and the Obsidian sync script). Both installers read them from there.
+## Shared configuration
 
-The tables below describe the Hyprland variant unless a row says otherwise.
+Configs that are identical in both variants live once in `common/`:
 
-## 🛠️ What's configured here?
+- Zed `settings.json`
+- OBS loopback script
+- Obsidian sync script (Rclone)
 
-### System and Compositor
-| Component | Tool |
-|-----------|------|
-| Package Manager (`pacman.conf`) | Parallel downloads enabled (5) + `ILoveCandy` easter egg |
-| Compositor | Hyprland |
-| Session Manager | UWSM |
-| Login Manager | Greetd + Tuigreet |
-| Firewall | UFW |
-| Network Manager | NetworkManager + WireGuard |
+Both installers read them from there, so a change in `common/` applies to both variants.
 
-### Terminal and Shell
-| Component | Tool |
-|-----------|------|
-| Terminal | Kitty |
-| Shell | ZSH |
-| Prompt | Starship |
-| Plugins | zsh-autosuggestions, zsh-syntax-highlighting, fzf |
-| Fonts | JetBrains Mono Nerd, Noto Fonts |
-
-### Interface and Theme
-| Component | Tool |
-|-----------|------|
-| Taskbar | Waybar |
-| App Launcher | Rofi (+ powermenu) |
-| Wallpaper | Hyprpaper |
-| GTK Theme | Materia-dark |
-| Qt Theme | qt5ct, qt6ct, Kvantum |
-| Keyring | GNOME Keyring + libsecret |
-
-### Audio and Media
-| Component | Tool |
-|-----------|------|
-| Audio Service | Pipewire (alsa, pulse, jack) + Wireplumber |
-| Audio Control | Pavucontrol |
-| Video Player | MPV + FFmpeg |
-| Image Viewer | FEH |
-| Screen Recorder | OBS Studio + v4l2loopback |
-
-### Files and Disks
-| Component | Tool |
-|-----------|------|
-| File Manager | Thunar (+ plugins, tumbler, gvfs) |
-| Sync | Rclone |
-| Compression | xarchiver, unzip, p7zip, unrar, tar, gzip, bzip2 |
-
-### Development
-| Component | Tool |
-|-----------|------|
-| Code Editor | Zed (Flatpak) |
-| Version Control | Git |
-| JS/TS Runtime | Node.js (NVM v24) + pnpm |
-| Python Runtime | UV (Astral) |
-| Containers | Docker + Docker Compose + Docker Buildx |
-
-### Applications
-| Application | Installation |
-|------------|--------------|
-| Zen Browser | Flatpak |
-| Google Chrome | Flatpak |
-| Obsidian | Flatpak (+ sync via Rclone and systemd) |
-| Spotify | Flatpak |
-| Discord | Flatpak |
-| DBeaver | Flatpak |
-| Anki | Flatpak |
-| System Monitor | BTOP (pacman) |
-| Terminal Editor | micro (pacman) |
-| Clipboard | wl-clipboard |
-| Screenshot | grim + slurp |
-
-## 🚀 How to install on a new machine
-
-Follow the steps below after performing a clean Arch Linux installation.
-
-### Prerequisites
-
-- **Arch Linux** freshly installed with:
-  - **BTRFS** filesystem with ZSTD compression
-  - Subvolumes: `@`, `@home`, `@log`, `@pkg`
-  - Partitions: `/boot/efi` (EFI), `/boot` (kernels), `/` (root)
-- **Active internet connection**
-- **Git** installed on the base system
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/anjosrejunior/my-arch-config
-cd my-arch-config
-```
-
-### 2. Run the installer for your variant
-
-```bash
-# Hyprland (full desktop)
-cd my-setup-hyprland
-./install.sh
-
-# KDE Plasma (apps, dev tools and shell only)
-cd my-setup-kde
-./install.sh
-```
-
-> **Note:** The script will ask for your name and email to configure Git. Have this information ready.
-> `install.sh` is an orchestrator: it activates the themed scripts in the variant's `scripts/` folder, in order. The Hyprland variant runs `00` to `11` (user input, system base, shell, network, git, flatpak, display, desktop, media, files, dev, apps). The KDE variant has no network (`03`) or desktop (`07`) scripts.
-
-### Post-installation
-
-1. **ZSH** — Log out and log back in (or restart the terminal) for ZSH to become the default shell.
-2. **User services** — After the first graphical login, run `./post-install.sh` inside your variant's folder (`my-setup-hyprland/` or `my-setup-kde/`) to activate the user systemd services (PipeWire, OBS Loopback, Obsidian Sync, and GNOME Keyring on Hyprland). Then run `./verify-services.sh` to check them. These are not enabled during `install.sh` because they need an active user/graphical session.
-3. **Zed** — Open Zed at least once so that Flatpak generates the configuration directory structure.
-4. **Obsidian** — Configure Rclone for sync (the script copies the `sync-obsidian` binary to `~/.local/bin/`; the systemd service is activated by `post-install.sh`).
-5. **Docker** — Log out and log back in for the `docker` group to take effect (or run `newgrp docker`).
-
-## 📁 Repository Structure
+## Repository layout
 
 ```
 my-arch-config/
-├── common/                             # Configs shared by both variants
-│   ├── obs/obs-v4l2loopback.sh         # OBS loopback script (installed as ~/.local/bin/obs-v4l2loopback)
-│   ├── obsidian-rclone/sync-obsidian.sh # Obsidian/Rclone sync script (installed as ~/.local/bin/sync-obsidian)
-│   └── zed/settings.json               # Zed settings
-├── my-setup-hyprland/                  # Hyprland variant (full desktop)
-│   ├── greetd/                         # Greetd (Display Manager)
-│   ├── hypr/                           # Hyprland (Lua config) and Hyprpaper configurations
-│   ├── obs/                            # OBS loopback systemd user service
-│   ├── obsidian-rclone/                # Obsidian sync systemd user service
-│   ├── post-install/                   # Helper not called by the installers (config-git-ssh-key.sh)
-│   ├── rofi/                           # Rofi configurations (config.rasi, powermenu.rasi, rofi-powermenu.sh)
-│   ├── waybar/                         # Waybar configurations (config.jsonc, style.css)
-│   ├── install.sh                      # Orchestrator script (activates the themed scripts below)
-│   ├── post-install.sh                 # Post-install: enables user systemd services
-│   ├── verify-services.sh              # Checks the user systemd services
-│   ├── scripts/                        # Themed scripts activated in order by install.sh
-│   │   ├── lib/common.sh               # Shared helpers: logging, checklist, sudo refresh, traps
-│   │   ├── 00-user-input.sh            # Git profile + NVIDIA driver selection prompts
-│   │   ├── 01-system-base.sh           # Mirrors, system update and base packages
-│   │   ├── 02-shell.sh                 # ZSH, Starship and completions
-│   │   ├── 03-network.sh               # UFW, NetworkManager/WireGuard and GNOME Keyring
-│   │   ├── 04-git.sh                   # Git config and YAY (AUR helper)
-│   │   ├── 05-flatpak.sh               # Flatpak + Flathub
-│   │   ├── 06-display.sh               # Hyprland + NVIDIA (conditional), UWSM, GreetD/Tuigreet
-│   │   ├── 07-desktop.sh               # Waybar, Rofi, dark theme and wallpaper
-│   │   ├── 08-media.sh                 # PipeWire, clipboard tools and OBS Studio
-│   │   ├── 09-files.sh                 # Thunar, media viewers and Rclone
-│   │   ├── 10-dev.sh                   # Node (NVM), UV (Astral) and Docker
-│   │   └── 11-apps.sh                  # Flatpak apps install + Zed/Browsers/Anki/Obsidian config
-│   ├── my-arch-en.md                   # English documentation
-│   ├── my-arch-pt-br.md                # Portuguese (Brazil) documentation
-│   └── wallpaper.jpg                   # Default wallpaper
-├── my-setup-kde/                       # KDE Plasma variant (apps, dev tools and shell only)
-│   ├── obs/                            # OBS loopback systemd user service
-│   ├── obsidian-rclone/                # Obsidian sync systemd user service
-│   ├── install.sh                      # Orchestrator script (activates the themed scripts below)
-│   ├── post-install.sh                 # Post-install: user services and Breeze Dark theme
-│   ├── verify-services.sh              # Checks the user systemd services
-│   └── scripts/                        # Themed scripts activated in order by install.sh
-│       ├── lib/common.sh               # Shared helpers: logging, checklist, sudo refresh, traps
-│       ├── 00-user-input.sh            # Git profile, NVIDIA, bootloader and GPG/SSH key prompts
-│       ├── 01-system-base.sh           # Mirrors, system update and base packages
-│       ├── 02-shell.sh                 # ZSH, Starship and completions
-│       ├── 04-git.sh                   # Git config, YAY (AUR helper) and GPG/SSH keys
-│       ├── 05-flatpak.sh               # Flatpak + Flathub
-│       ├── 06-display.sh               # Optional NVIDIA 1050ti drivers
-│       ├── 08-media.sh                 # PipeWire, plasma-pa, clipboard tools and Spectacle
-│       ├── 09-files.sh                 # Dolphin, Ark and file tools
-│       ├── 10-dev.sh                   # Node (NVM), UV (Astral) and Docker
-│       └── 11-apps.sh                  # Flatpak apps install + Zed/Browsers/Anki/Obsidian config
-├── scripts/                            # One-off helper scripts (not the installers)
-├── setup-docs/                         # Manual setup notes per topic
-├── AGENTS.md                           # Guidance for coding agents working on this repo
-├── LICENSE
-└── README.md
+├── common/             # Configs shared by both variants
+├── my-setup-hyprland/  # Hyprland installer and desktop configs
+├── my-setup-kde/       # KDE Plasma installer
+├── setup-docs/         # Manual setup notes per topic
+├── scripts/            # One-off helper scripts, not run by the installers
+├── AGENTS.md           # Guidance for coding agents working on this repo
+└── LICENSE
 ```
 
-## 📝 Notes
+- **`setup-docs/`** holds manual notes for steps that are not fully automated, such as pacman configuration, NVIDIA, greetd, Secure Boot, dual boot, Wi-Fi and VPN.
+- **`scripts/`** holds helpers that are run by hand, for example for Secure Boot, OBS or a specific hardware device.
 
-- The script uses **sudo pre-authentication** (`sudo -v`) to avoid multiple password prompts.
-- The installed NVIDIA driver is `nvidia-580xx` (DKMS), compatible with Wayland.
-- The Hyprland variant applies the dark theme globally via `gsettings` (Materia-dark). The KDE variant applies Breeze Dark with `plasma-apply-colorscheme` / `plasma-apply-lookandfeel` in its `post-install.sh`.
-- The lock screen (**Hyprlock**) is not yet configured in the script (pending).
-- Flatpak support includes the Flathub repositories and specific permissions for Zen Browser, Chrome, Obsidian, and Anki.
+## Requirements
 
-## 📄 License
+- **Arch Linux** installed on a UEFI machine, with an active internet connection and `git` available.
+- The installers target **Arch Linux only**. They use `pacman`, `yay` and `sudo`, and they change system configuration, so review the scripts before running them.
 
-This project is licensed under the MIT License. Feel free to use, modify, and distribute it.
+## Usage
+
+1. Clone the repository and enter the folder of the variant you want:
+
+   ```bash
+   git clone https://github.com/anjosrejunior/my-arch-config
+   cd my-arch-config/my-setup-kde   # or my-setup-hyprland
+   ```
+
+2. Run the installer. It asks a few questions, such as the Git identity and hardware options, then runs the numbered scripts in order:
+
+   ```bash
+   ./install.sh
+   ```
+
+3. After the first graphical login, run the user services setup and check it:
+
+   ```bash
+   ./post-install.sh
+   ./verify-services.sh
+   ```
+
+   These steps are separate because user systemd services need an active graphical session.
+
+Each step is described in more detail in the scripts themselves and in `setup-docs/`.
+
+## How the installers work
+
+- `install.sh` is an orchestrator. It runs the themed scripts in `scripts/`, in numbered order, in a single shell, so they share state.
+- The numbers keep the execution order. Gaps in the numbering are intentional, so new scripts can be added without renaming the existing ones.
+- Each run writes a checklist to `~/install-checklist-*.txt`, listing the steps that succeeded and any warnings or errors.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
