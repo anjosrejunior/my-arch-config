@@ -133,9 +133,9 @@ ok "Navegadores configurados."
 log "Anki"
 
 step "Configurando diretório de dados do Anki..."
-mkdir -p "$HOME/documents/anki/"
-flatpak override --user --filesystem="$HOME/documents/anki" net.ankiweb.Anki || warn "Falha ao configurar filesystem do Anki."
-flatpak override --user --env=ANKI_BASE="$HOME/documents/anki" net.ankiweb.Anki || warn "Falha ao configurar ANKI_BASE."
+mkdir -p "$HOME/Documents/anki/"
+flatpak override --user --filesystem="$HOME/Documents/anki" net.ankiweb.Anki || warn "Falha ao configurar filesystem do Anki."
+flatpak override --user --env=ANKI_BASE="$HOME/Documents/anki" net.ankiweb.Anki || warn "Falha ao configurar ANKI_BASE."
 
 ok "Anki configurado."
 
@@ -146,12 +146,12 @@ ok "Anki configurado."
 log "Obsidian"
 
 step "Criando diretórios necessários..."
-mkdir -p "$HOME/documents/ocarina-of-time/"
+mkdir -p "$HOME/Documents/ocarina-of-time/"
 mkdir -p "$HOME/scripts/"
 mkdir -p "$BIN_DST_DIR"
 
 step "Concedendo acesso ao Vault no Flatpak..."
-flatpak override --user --filesystem="$HOME/documents/ocarina-of-time" md.obsidian.Obsidian || warn "Falha ao configurar filesystem do Obsidian."
+flatpak override --user --filesystem="$HOME/Documents/ocarina-of-time" md.obsidian.Obsidian || warn "Falha ao configurar filesystem do Obsidian."
 
 step "Copiando script de sincronização do Rclone..."
 if [ -f "$COMMON_DIR/obsidian-rclone/sync-obsidian.sh" ]; then
