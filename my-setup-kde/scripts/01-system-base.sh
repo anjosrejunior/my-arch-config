@@ -3,7 +3,7 @@
 # ####################################################################################
 # Atualiza o sistema e instala pacotes base usados no desktop: editor de
 # terminal, Kitty, fontes, bibliotecas de compatibilidade (FUSE 2/3 e GTK 3),
-# monitor de sistema e NetworkManager.
+# senhas SSH no KWallet, monitor de sistema e NetworkManager.
 # ####################################################################################
 
 # Garante a biblioteca comum carregada (permite execução isolada do script).
@@ -40,6 +40,44 @@ sudo pacman -S --needed --noconfirm \
     gtk3
 
 ok "Pacotes base instalados."
+
+# ####################################################################################
+# ///// SENHAS SSH (KWALLET)
+# ####################################################################################
+# ksshaskpass guarda a passphrase da chave SSH no KWallet; kwallet-pam desbloqueia o
+# cofre no login pelo SDDM. É o equivalente ao GNOME Keyring usado no Hyprland.
+# Requisito do KWallet: a carteira precisa se chamar kdewallet e ter a mesma senha do
+# usuário, por isso ela não pode ter sido criada antes com outra senha.
+
+log "Senhas SSH (KWallet)"
+
+step "Instalando ksshaskpass e kwallet-pam..."
+sudo pacman -S --needed --noconfirm ksshaskpass kwallet-pam
+
+step "Configurando desbloqueio do KWallet no login (SDDM)..."
+if [ ! -f /etc/pam.d/sddm ]; then
+    warn "/etc/pam.d/sddm não encontrado. Configure o desbloqueio do KWallet manualmente."
+elif grep -q "pam_kwallet5.so" /etc/pam.d/sddm; then
+    ok "/etc/pam.d/sddm já contém o pam_kwallet5.so."
+else
+    # "optional": se o módulo falhar, o login não é bloqueado.
+    printf '%s\n' \
+        'auth       optional   pam_kwallet5.so' \
+        'session    optional   pam_kwallet5.so auto_start' \
+        | sudo tee -a /etc/pam.d/sddm > /dev/null
+    ok "Linhas do pam_kwallet5.so adicionadas ao /etc/pam.d/sddm."
+fi
+
+step "Definindo ksshaskpass como askpass do SSH..."
+# environment.d é lido pelo systemd --user na sessão gráfica. O SSH_ASKPASS_REQUIRE=prefer
+# faz o ssh usar o ksshaskpass também dentro do terminal, em vez de pedir no próprio terminal.
+mkdir -p "$HOME/.config/environment.d"
+cat > "$HOME/.config/environment.d/ssh-askpass.conf" << EOF
+SSH_ASKPASS=$(command -v ksshaskpass || echo /usr/bin/ksshaskpass)
+SSH_ASKPASS_REQUIRE=prefer
+EOF
+
+ok "ksshaskpass e kwallet-pam instalados e configurados. Reinicie a sessão para aplicar."
 
 # ####################################################################################
 # ///// SYSTEM MONITOR
