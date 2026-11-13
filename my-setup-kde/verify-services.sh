@@ -9,6 +9,7 @@ SERVICES=(
     "pipewire.service"
     "pipewire-pulse.service"
     "wireplumber.service"
+    "ssh-agent.service"
     "obs-v4l2loopback.service"
     "obsidian-sync.service"
 )
