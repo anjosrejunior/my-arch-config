@@ -2,6 +2,8 @@
 # Libera espaço em disco no Arch Linux (btrfs + Snapper, Docker, Flatpak e caches).
 # Uso: ./disk-cleanup.sh
 #   JOURNAL_MAX=100M ./disk-cleanup.sh   # limite do journal (padrão: 200M)
+#   SNAPPER_HOURLY=5 SNAPPER_DAILY=7 SNAPPER_MONTHLY=2 SNAPPER_YEARLY=0 ./disk-cleanup.sh
+#                                        # retenção de timeline do Snapper (root e home)
 #
 # Passos seguros rodam direto. Passos que podem apagar dados úteis (containers
 # parados, imagens locais, snapshots) pedem confirmação, com resposta padrão "não".
@@ -11,6 +13,13 @@
 set -euo pipefail
 
 JOURNAL_MAX="${JOURNAL_MAX:-200M}"
+
+# Retenção de snapshots de timeline do Snapper (aplicada em root e home).
+# Os padrões são o exemplo de setup-docs/disk-cleanup.md; ajuste com as variáveis.
+SNAPPER_HOURLY="${SNAPPER_HOURLY:-5}"
+SNAPPER_DAILY="${SNAPPER_DAILY:-7}"
+SNAPPER_MONTHLY="${SNAPPER_MONTHLY:-2}"
+SNAPPER_YEARLY="${SNAPPER_YEARLY:-0}"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 ok()   { printf '    \033[1;32mOK\033[0m %s\n' "$*"; }
@@ -91,11 +100,30 @@ limpar_docker_cache_completo() {
     docker builder prune -a -f | tail -n 1
 }
 
+aplicar_retencao_snapper() {
+    # Grava os limites de timeline em /etc/snapper/configs/<config> e apaga o excedente.
+    # Só troca as chaves que já existem no arquivo (não cria chaves novas).
+    local config="$1"
+    local arquivo="/etc/snapper/configs/$config"
+    if [[ ! -f "$arquivo" ]]; then
+        warn "$arquivo não encontrado; config '$config' do Snapper pulada."
+        return 0
+    fi
+    sudo sed -i \
+        -e "s/^TIMELINE_LIMIT_HOURLY=.*/TIMELINE_LIMIT_HOURLY=\"$SNAPPER_HOURLY\"/" \
+        -e "s/^TIMELINE_LIMIT_DAILY=.*/TIMELINE_LIMIT_DAILY=\"$SNAPPER_DAILY\"/" \
+        -e "s/^TIMELINE_LIMIT_MONTHLY=.*/TIMELINE_LIMIT_MONTHLY=\"$SNAPPER_MONTHLY\"/" \
+        -e "s/^TIMELINE_LIMIT_YEARLY=.*/TIMELINE_LIMIT_YEARLY=\"$SNAPPER_YEARLY\"/" \
+        "$arquivo"
+    ok "$config: hourly=$SNAPPER_HOURLY daily=$SNAPPER_DAILY monthly=$SNAPPER_MONTHLY yearly=$SNAPPER_YEARLY"
+    sudo snapper -c "$config" cleanup timeline
+}
+
 limpar_snapshots() {
-    # Apaga snapshots acima dos limites de retenção atuais de cada config do Snapper
+    # Aplica a retenção de cada config do Snapper e apaga os snapshots excedentes
     local config
     for config in root home; do
-        sudo snapper -c "$config" cleanup timeline
+        aplicar_retencao_snapper "$config"
     done
 }
 
@@ -164,7 +192,7 @@ if [[ $DOCKER_OK -eq 1 ]]; then
 fi
 
 if have snapper; then
-    if pergunta "Snapper: aplicar a retenção atual e apagar snapshots excedentes? (irreversível)"; then
+    if pergunta "Snapper: aplicar a retenção (hourly=$SNAPPER_HOURLY daily=$SNAPPER_DAILY monthly=$SNAPPER_MONTHLY yearly=$SNAPPER_YEARLY) e apagar snapshots excedentes? (irreversível)"; then
         passo "Snapper: cleanup timeline (root e home)" limpar_snapshots
     fi
 fi

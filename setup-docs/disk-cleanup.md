@@ -252,7 +252,12 @@ cd <caminho-do-repo>
 
 # Limite do journal diferente:
 JOURNAL_MAX=100M ./scripts/disk-cleanup.sh
+
+# Retenção do Snapper diferente (aplicada em root e home, com confirmação):
+SNAPPER_HOURLY=5 SNAPPER_DAILY=7 SNAPPER_MONTHLY=2 SNAPPER_YEARLY=0 ./scripts/disk-cleanup.sh
 ```
+
+O passo do Snapper grava esses valores em `/etc/snapper/configs/root` e `/etc/snapper/configs/home` (só as chaves `TIMELINE_LIMIT_*` que já existem) e depois roda `snapper -c <config> cleanup timeline`. Os padrões são o exemplo da seção 3.13.
 
 - Não rode como root. O `yay` recusa, e o script usa `sudo` só quando precisa.
 - O script pede a senha do `sudo` uma vez, no início.
