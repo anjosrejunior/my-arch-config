@@ -23,11 +23,29 @@ sudo pacman -S --needed --noconfirm \
     lib32-mesa \
     xdg-desktop-portal-hyprland \
     xdg-desktop-portal-gtk \
-    xdg-utils \
-    linux-headers \
-    linux-lts-headers
+    xdg-utils
 
 ok "Hyprland e dependências instalados."
+
+# ####################################################################################
+# ///// HEADERS DO KERNEL
+# ####################################################################################
+# Necessários para compilar módulos DKMS (NVIDIA e v4l2loopback). Instala os headers
+# apenas dos kernels presentes na máquina (mesma lógica do setup KDE).
+
+log "Headers do kernel"
+
+step "Instalando headers dos kernels instalados..."
+HEADERS_PKGS=(linux-headers)
+for kernel in linux-lts linux-zen linux-hardened; do
+    if pacman -Q "$kernel" &>/dev/null; then
+        HEADERS_PKGS+=("${kernel}-headers")
+    fi
+done
+
+sudo pacman -S --needed --noconfirm "${HEADERS_PKGS[@]}"
+
+ok "Headers instalados: ${HEADERS_PKGS[*]}"
 
 # ####################################################################################
 # ///// AGENTE DE POLKIT (HYPRPOLKITAGENT)
