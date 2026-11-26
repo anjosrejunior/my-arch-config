@@ -48,7 +48,7 @@ finish_checklist
 ok "Checklist salvo em: $CHECKLIST_FILE"
 
 warn "Serviços de usuário (PipeWire, OBS Loopback, Obsidian Sync e polkit) NÃO foram ativados."
-warn "Após o primeiro login gráfico, execute manualmente: ./post-install.sh (cria a chave SSH do GitHub, configura o rclone 'mydrive' e, com WG_CONF=/caminho/wg0.conf, importa a VPN)."
+warn "Após o primeiro login gráfico, execute manualmente: ./post-install.sh (cria a chave SSH do GitHub e configura o rclone 'mydrive')."
 
 REBOOT=""
 while true; do

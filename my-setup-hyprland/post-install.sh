@@ -4,8 +4,8 @@
 # ####################################################################################
 # Pós-instalação: ativa no Systemd os serviços de usuário que dependem de uma
 # sessão gráfica ativa (PipeWire, OBS Loopback, Obsidian Sync e agente de polkit),
-# configura o rclone (remoto mydrive), cria a chave SSH do GitHub e, se informado,
-# importa a conexão WireGuard no NetworkManager.
+# configura o rclone (remoto mydrive) e cria a chave SSH do GitHub.
+# A VPN WireGuard não é configurada aqui: use o vpn-setup.sh, quando tiver o .conf.
 # Execute APÓS o primeiro login gráfico (os comandos usam systemctl --user).
 # Os comandos de instalação dos pacotes continuam no install.sh; aqui ficam
 # apenas a cópia das configs (.service), a ativação dos serviços e as etapas
@@ -13,7 +13,6 @@
 #
 # Variáveis opcionais:
 #   RCLONE_CONF_SRC=/caminho/rclone.conf  # copia uma config do rclone já pronta (com tokens)
-#   WG_CONF=/caminho/wg0.conf             # importa a conexão WireGuard wg0 no NetworkManager
 # ####################################################################################
 
 set -Eeuo pipefail
@@ -193,28 +192,6 @@ warn "Sua chave PÚBLICA do GitHub está abaixo e em '$PUBLIC_KEY_TXT':"
 echo "--------------------------------------------------------------------------------"
 cat "${SSH_KEY}.pub"
 echo "--------------------------------------------------------------------------------"
-
-# ####################################################################################
-# ///// WIREGUARD (CONEXÃO WG0 NO NETWORKMANAGER)
-# ####################################################################################
-# A conexão aparece como applet de VPN na bandeja da Waybar e no menu vpn-menu (SUPER + W).
-# O arquivo .conf contém a chave privada: fica fora do repositório.
-
-log "WireGuard (wg0)"
-
-if nmcli -t -f NAME connection show | grep -qx "wg0"; then
-    ok "Conexão wg0 já existe no NetworkManager."
-elif [ -n "${WG_CONF:-}" ] && [ -f "$WG_CONF" ]; then
-    step "Importando $WG_CONF no NetworkManager..."
-    sudo nmcli connection import type wireguard file "$WG_CONF"
-    if nmcli -t -f NAME connection show | grep -qx "wg0"; then
-        ok "Conexão wg0 importada."
-    else
-        warn "Importado, mas a conexão não se chama 'wg0'. Renomeie com: sudo nmcli connection modify <nome> connection.id wg0"
-    fi
-else
-    step "Nenhuma conexão wg0 encontrada. Para importar depois: WG_CONF=/caminho/wg0.conf ./post-install.sh"
-fi
 
 # ####################################################################################
 # ///// FIM
