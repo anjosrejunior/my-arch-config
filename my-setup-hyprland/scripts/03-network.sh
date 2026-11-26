@@ -34,11 +34,24 @@ ok "Firewall configurado e ativado."
 
 log "Rede (NetworkManager + WireGuard)"
 
-step "Instalando NetworkManager e WireGuard..."
-sudo pacman -S --needed --noconfirm networkmanager wireguard-tools openresolv
+step "Instalando NetworkManager, applet (bandeja) e WireGuard..."
+sudo pacman -S --needed --noconfirm networkmanager network-manager-applet wireguard-tools openresolv
 
 step "Ativando NetworkManager no Systemd..."
 sudo systemctl enable --now NetworkManager
+
+# Não pode haver outro gerenciador de rede disputando as mesmas interfaces.
+if systemctl is-enabled --quiet systemd-networkd 2>/dev/null || systemctl is-active --quiet systemd-networkd; then
+    warn "systemd-networkd está ativo. Desative-o (sudo systemctl disable --now systemd-networkd) para não conflitar com o NetworkManager."
+fi
+
+# Se o Wi-Fi usa iwd (iwctl), o NetworkManager precisa usar o backend iwd.
+if systemctl is-enabled --quiet iwd 2>/dev/null || systemctl is-active --quiet iwd; then
+    step "iwd detectado: configurando o NetworkManager com wifi.backend=iwd..."
+    sudo mkdir -p /etc/NetworkManager/conf.d
+    printf '[device]\nwifi.backend=iwd\n' | sudo tee /etc/NetworkManager/conf.d/wifi.conf > /dev/null
+    ok "wifi.backend=iwd gravado em /etc/NetworkManager/conf.d/wifi.conf (vale após reiniciar o NetworkManager)."
+fi
 
 step "Aguardando conexão de rede..."
 if ! nm-online -q --timeout=30; then

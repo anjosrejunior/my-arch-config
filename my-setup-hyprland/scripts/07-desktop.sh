@@ -90,11 +90,33 @@ if [ -d "$ROFI_SRC_DIR" ]; then
     else
         warn "rofi-powermenu.sh não encontrado em $ROFI_SRC_DIR/"
     fi
+
+    # Menu de VPN WireGuard (mesma convenção de nome do powermenu: sem .sh no destino)
+    if [ -f "$ROFI_SRC_DIR/vpn-menu.sh" ]; then
+        cp "$ROFI_SRC_DIR/vpn-menu.sh" "$BIN_DST_DIR/vpn-menu"
+        chmod +x "$BIN_DST_DIR/vpn-menu"
+        ok "vpn-menu.sh copiado e tornado executável em $BIN_DST_DIR/vpn-menu"
+    else
+        warn "vpn-menu.sh não encontrado em $ROFI_SRC_DIR/"
+    fi
 else
     warn "Diretório $ROFI_SRC_DIR/ não encontrado; configurações do Rofi não copiadas."
 fi
 
 ok "Rofi configurado."
+
+# ####################################################################################
+# ///// NOTIFICAÇÕES (DUNST)
+# ####################################################################################
+# O daemon é iniciado pelo hyprland.lua (autostart). O libnotify fornece o notify-send,
+# usado pela captura de tela e pelo menu de VPN.
+
+log "Notificações (Dunst)"
+
+step "Instalando dunst e libnotify..."
+sudo pacman -S --needed --noconfirm dunst libnotify
+
+ok "Dunst configurado."
 
 # ####################################################################################
 # ///// DARK THEME

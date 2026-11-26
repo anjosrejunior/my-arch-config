@@ -68,6 +68,11 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("uwsm app -- waybar")
     hl.exec_cmd("uwsm app -- hyprpaper")
     hl.exec_cmd("sleep 5 && systemctl --user start obsidian-sync.service")
+
+    -- Notificações (Dunst), applet de rede com VPN na bandeja e bloqueio automático após 5 min
+    hl.exec_cmd("uwsm app -- dunst")
+    hl.exec_cmd("uwsm app -- nm-applet --indicator")
+    hl.exec_cmd("uwsm app -- hypridle")
 end)
 
 -------------------------------
@@ -303,6 +308,9 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(zedcode))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
 
 hl.bind(mainMod .. " + ESCAPE", hl.dsp.exec_cmd("rofi-powermenu"))
+
+-- Menu de VPN WireGuard (liga/desliga a conexão escolhida)
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("vpn-menu"))
 
 -- Captura de tela (Print Screen) usando Grim + Slurp
 hl.bind(mainMod .. " + SHIFT + c", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy && notify-send 'Captura de Tela' 'Área selecionada copiada!'"))

@@ -7,6 +7,7 @@ SERVICES=(
     "wireplumber.service"
     "obs-v4l2loopback.service"
     "obsidian-sync.service"
+    "hyprpolkitagent.service"
 )
 
 # Cores para facilitar a leitura no terminal

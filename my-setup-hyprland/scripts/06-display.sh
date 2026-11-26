@@ -29,6 +29,19 @@ sudo pacman -S --needed --noconfirm \
 
 ok "Hyprland e dependências instalados."
 
+# ####################################################################################
+# ///// AGENTE DE POLKIT (HYPRPOLKITAGENT)
+# ####################################################################################
+# Pedidos de senha de administrador (pkexec, GParted, etc.) precisam de um agente.
+# O serviço de usuário é habilitado no post-install.sh (exige sessão gráfica).
+
+log "Agente de Polkit (hyprpolkitagent)"
+
+step "Instalando hyprpolkitagent..."
+sudo pacman -S --needed --noconfirm hyprpolkitagent
+
+ok "hyprpolkitagent instalado."
+
 step "Criando diretório de config do hyprland..."
 mkdir -p "$HOME/.config/hypr"
 
@@ -136,5 +149,21 @@ ok "GreetD + Tuigreet configurados com sucesso."
 # ///// LOCK SCREEN & SUPENSÃO DE SISTEMA
 # ####################################################################################
 
-log "Lock Screen e Suspensão de Sistema"
-warn "Seção ainda não implementada (placeholder)."
+log "Lock Screen (Hyprlock + Hypridle)"
+
+step "Instalando hyprlock e hypridle..."
+sudo pacman -S --needed --noconfirm hyprlock hypridle
+
+step "Copiando configurações do hypridle e hyprlock..."
+mkdir -p "$HOME/.config/hypr"
+for arquivo in hypridle.conf hyprlock.conf; do
+    if [ -f "$SCRIPT_DIR/hypr/$arquivo" ]; then
+        cp "$SCRIPT_DIR/hypr/$arquivo" "$HOME/.config/hypr/$arquivo"
+        ok "$arquivo copiado para $HOME/.config/hypr/"
+    else
+        warn "$arquivo não encontrado em $SCRIPT_DIR/hypr/"
+    fi
+done
+
+# O hypridle é iniciado pelo hyprland.lua (autostart). Bloqueia após 5 minutos sem uso.
+ok "Bloqueio automático após 5 minutos configurado."

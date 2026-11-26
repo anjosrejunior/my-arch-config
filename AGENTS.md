@@ -27,7 +27,7 @@
 - Anything needing a graphical user session (`systemctl --user`, `gsettings`) belongs in `post-install.sh`, not `install.sh`.
 - Repo-to-install naming convention: source scripts keep `.sh`, but installed commands drop it into `~/.local/bin` (e.g. `obs-v4l2loopback.sh` -> `obs-v4l2loopback`, `sync-obsidian.sh` -> `sync-obsidian`). The `ExecStart=` paths in the service files rely on the installed names.
 - `10-dev.sh` (Hyprland) and `10-dev-tools.sh` (KDE) pin NVM and UV versions **and SHA-256 checksums**; bump the version and checksum together or installs abort.
-- `my-setup-hyprland/post-install/config-git-ssh-key.sh` is not called by either installer and is not executable. It also resolves `common.sh` via `../../scripts/lib/`, which is wrong from `post-install/`; source `../scripts/lib/common.sh` when running it.
+- The GitHub SSH key setup lives in `my-setup-hyprland/post-install.sh` (it used to be a separate `post-install/config-git-ssh-key.sh`, now removed). It prompts for a passphrase and reads the Git e-mail from `git config`, so it only works after `04-git.sh` ran or with a Git e-mail already configured.
 
 ### Shared files across variants
 

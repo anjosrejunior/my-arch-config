@@ -3,10 +3,17 @@
 # ///// POST INSTALL ARCH LINUX
 # ####################################################################################
 # Pós-instalação: ativa no Systemd os serviços de usuário que dependem de uma
-# sessão gráfica ativa (GNOME Keyring, PipeWire, OBS Loopback e Obsidian Sync).
+# sessão gráfica ativa (PipeWire, OBS Loopback, Obsidian Sync e agente de polkit),
+# configura o rclone (remoto mydrive), cria a chave SSH do GitHub e, se informado,
+# importa a conexão WireGuard no NetworkManager.
 # Execute APÓS o primeiro login gráfico (os comandos usam systemctl --user).
 # Os comandos de instalação dos pacotes continuam no install.sh; aqui ficam
-# apenas a cópia das configs (.service) e a ativação dos serviços.
+# apenas a cópia das configs (.service), a ativação dos serviços e as etapas
+# que pedem interação do usuário (senha da chave SSH, login OAuth do Drive).
+#
+# Variáveis opcionais:
+#   RCLONE_CONF_SRC=/caminho/rclone.conf  # copia uma config do rclone já pronta (com tokens)
+#   WG_CONF=/caminho/wg0.conf             # importa a conexão WireGuard wg0 no NetworkManager
 # ####################################################################################
 
 set -Eeuo pipefail
@@ -73,6 +80,141 @@ systemctl --user daemon-reload || warn "systemctl daemon-reload falhou."
 systemctl --user enable --now obsidian-sync.service || warn "Não foi possível ativar obsidian-sync.service."
 
 ok "Obsidian Sync ativado."
+
+# ####################################################################################
+# ///// AGENTE DE POLKIT (HYPRPOLKITAGENT)
+# ####################################################################################
+
+log "Agente de Polkit (hyprpolkitagent)"
+
+step "Ativando serviço no Systemd..."
+systemctl --user enable --now hyprpolkitagent.service || warn "Não foi possível ativar hyprpolkitagent.service."
+
+ok "hyprpolkitagent ativado."
+
+# ####################################################################################
+# ///// RCLONE (REMOTO MYDRIVE)
+# ####################################################################################
+# O obsidian-sync usa o remoto 'mydrive'. Sem ele o sync fica desativado.
+
+log "Rclone (remoto mydrive)"
+
+RCLONE_CONF_DST="$HOME/.config/rclone/rclone.conf"
+
+if rclone listremotes 2>/dev/null | grep -q "^mydrive:"; then
+    ok "Remoto 'mydrive' já configurado."
+elif [ -n "${RCLONE_CONF_SRC:-}" ] && [ -f "$RCLONE_CONF_SRC" ]; then
+    step "Copiando configuração do rclone de $RCLONE_CONF_SRC..."
+    mkdir -p "$(dirname "$RCLONE_CONF_DST")"
+    cp "$RCLONE_CONF_SRC" "$RCLONE_CONF_DST"
+    chmod 600 "$RCLONE_CONF_DST"
+    if rclone listremotes 2>/dev/null | grep -q "^mydrive:"; then
+        ok "Remoto 'mydrive' restaurado a partir do arquivo informado."
+    else
+        warn "O arquivo informado não contém o remoto 'mydrive'."
+    fi
+else
+    # Sem arquivo pronto: abre o login OAuth do Google Drive no navegador.
+    # Assume que o remoto 'mydrive' é do tipo 'drive' (Google Drive), como o sync-obsidian espera.
+    step "Remoto 'mydrive' não encontrado. Iniciando o login do Google Drive (abre o navegador)..."
+    if rclone config create mydrive drive scope=drive; then
+        ok "Remoto 'mydrive' criado."
+    else
+        warn "Não foi possível criar o remoto 'mydrive'. Rode manualmente: rclone config"
+    fi
+fi
+
+# ####################################################################################
+# ///// CHAVE SSH DO GITHUB
+# ####################################################################################
+
+log "Chave SSH para o GitHub"
+
+if ! command -v ssh-keygen &> /dev/null; then
+    step "Instalando OpenSSH..."
+    sudo pacman -S --needed --noconfirm openssh
+fi
+
+SSH_DIR="$HOME/.ssh"
+SSH_KEY="$SSH_DIR/github_key"
+SSH_CONFIG="$SSH_DIR/config"
+PUBLIC_KEY_TXT="$HOME/chave_publica_github.txt"
+
+mkdir -p "$SSH_DIR"
+chmod 700 "$SSH_DIR"
+
+if [ -f "$SSH_KEY" ]; then
+    ok "Chave SSH já existe em $SSH_KEY. Geração pulada."
+else
+    # Comentário da chave: e-mail do Git (o install.sh não é executado aqui, então lê do git config).
+    KEY_COMMENT="$(git config --global user.email || true)"
+    while [ -z "$KEY_COMMENT" ]; do
+        read -rp "Digite o e-mail da sua conta do GitHub (usado como comentário da chave): " KEY_COMMENT
+    done
+
+    SSH_PASSPHRASE=""
+    while [ -z "$SSH_PASSPHRASE" ]; do
+        read -rsp "Digite uma senha (passphrase) para a chave SSH do GitHub: " SSH_PASSPHRASE
+        echo ""
+        [ -z "$SSH_PASSPHRASE" ] && warn "A senha não pode ficar em branco."
+    done
+
+    ssh-keygen -t ed25519 -C "$KEY_COMMENT" -f "$SSH_KEY" -N "$SSH_PASSPHRASE" > /dev/null
+    unset SSH_PASSPHRASE
+    chmod 600 "$SSH_KEY"
+    chmod 644 "${SSH_KEY}.pub"
+
+    if ! grep -q "Host github.com" "$SSH_CONFIG" 2>/dev/null; then
+        cat << EOF >> "$SSH_CONFIG"
+
+# Configuração da chave SSH para o GitHub
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github_key
+    IdentitiesOnly yes
+    AddKeysToAgent yes
+EOF
+        chmod 600 "$SSH_CONFIG"
+        ok "Arquivo ~/.ssh/config atualizado com as regras do GitHub."
+    fi
+
+    cp "${SSH_KEY}.pub" "$PUBLIC_KEY_TXT"
+    chmod 644 "$PUBLIC_KEY_TXT"
+
+    ok "Chave SSH gerada com sucesso!"
+    ok "Chave privada: $SSH_KEY"
+    ok "Cópia da chave pública pronta em: $PUBLIC_KEY_TXT"
+    warn "Cadastre a chave PÚBLICA em https://github.com/settings/keys"
+fi
+
+echo ""
+warn "Sua chave PÚBLICA do GitHub está abaixo e em '$PUBLIC_KEY_TXT':"
+echo "--------------------------------------------------------------------------------"
+cat "${SSH_KEY}.pub"
+echo "--------------------------------------------------------------------------------"
+
+# ####################################################################################
+# ///// WIREGUARD (CONEXÃO WG0 NO NETWORKMANAGER)
+# ####################################################################################
+# A conexão aparece como applet de VPN na bandeja da Waybar e no menu vpn-menu (SUPER + W).
+# O arquivo .conf contém a chave privada: fica fora do repositório.
+
+log "WireGuard (wg0)"
+
+if nmcli -t -f NAME connection show | grep -qx "wg0"; then
+    ok "Conexão wg0 já existe no NetworkManager."
+elif [ -n "${WG_CONF:-}" ] && [ -f "$WG_CONF" ]; then
+    step "Importando $WG_CONF no NetworkManager..."
+    sudo nmcli connection import type wireguard file "$WG_CONF"
+    if nmcli -t -f NAME connection show | grep -qx "wg0"; then
+        ok "Conexão wg0 importada."
+    else
+        warn "Importado, mas a conexão não se chama 'wg0'. Renomeie com: sudo nmcli connection modify <nome> connection.id wg0"
+    fi
+else
+    step "Nenhuma conexão wg0 encontrada. Para importar depois: WG_CONF=/caminho/wg0.conf ./post-install.sh"
+fi
 
 # ####################################################################################
 # ///// FIM

@@ -31,6 +31,28 @@ sudo pacman -S --needed --noconfirm \
 
 ok "Pacotes base instalados."
 
+step "Configurando o micro (softwrap)..."
+MICRO_SRC="$SCRIPT_DIR/micro/settings.json"
+MICRO_DST_DIR="$HOME/.config/micro"
+MICRO_DST="$MICRO_DST_DIR/settings.json"
+
+mkdir -p "$MICRO_DST_DIR"
+
+if [ ! -f "$MICRO_DST" ]; then
+    # Sem arquivo prévio: copia a config do repositório.
+    cp "$MICRO_SRC" "$MICRO_DST"
+    ok "settings.json criado em $MICRO_DST"
+else
+    # Já existe: só liga o softwrap, preservando as outras opções do usuário.
+    sudo pacman -S --needed --noconfirm jq
+    if jq '.softwrap = true' "$MICRO_DST" > "$MICRO_DST.tmp" && mv "$MICRO_DST.tmp" "$MICRO_DST"; then
+        ok "softwrap ativado em $MICRO_DST"
+    else
+        rm -f "$MICRO_DST.tmp"
+        warn "Não foi possível alterar $MICRO_DST (JSON inválido?). Adicione \"softwrap\": true manualmente."
+    fi
+fi
+
 # ####################################################################################
 # ///// SYSTEM MONITOR
 # ####################################################################################
