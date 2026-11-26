@@ -27,9 +27,11 @@ sudo pacman -S --needed --noconfirm \
     unrar \
     tar \
     gzip \
-    bzip2
+    bzip2 \
+    udisks2 \
+    ntfs-3g
 
-ok "Thunar e utilitários instalados."
+ok "Thunar e utilitários instalados (incluindo montagem de discos via udisks2)."
 
 # ####################################################################################
 # ///// VISUALIZADORES

@@ -26,7 +26,10 @@ sudo pacman -S --needed --noconfirm \
     wireplumber \
     pavucontrol
 
-ok "Áudio configurado."
+step "Instalando controle de brilho e de mídia (teclas do Hyprland)..."
+sudo pacman -S --needed --noconfirm brightnessctl playerctl
+
+ok "Áudio, brilho e controle de mídia configurados."
 
 # A ativação dos serviços de usuário do PipeWire (systemctl --user) é feita no
 # post-install.sh, pois depende de uma sessão gráfica ativa.
@@ -37,8 +40,8 @@ ok "Áudio configurado."
 
 log "Clipboard e Captura de Tela"
 
-step "Instalando wl-clipboard, grim e slurp..."
-sudo pacman -S --needed --noconfirm wl-clipboard grim slurp
+step "Instalando wl-clipboard, cliphist, grim e slurp..."
+sudo pacman -S --needed --noconfirm wl-clipboard cliphist grim slurp
 
 ok "Ferramentas de clipboard instaladas."
 

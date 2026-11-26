@@ -72,6 +72,8 @@ hl.on("hyprland.start", function ()
     -- Notificações (Dunst), applet de rede com VPN na bandeja e bloqueio automático após 5 min
     hl.exec_cmd("uwsm app -- dunst")
     hl.exec_cmd("uwsm app -- nm-applet --indicator")
+    hl.exec_cmd("uwsm app -- wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("uwsm app -- wl-paste --type image --watch cliphist store")
     hl.exec_cmd("uwsm app -- hypridle")
 end)
 
@@ -82,6 +84,7 @@ end)
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Environment-variables/
 
 hl.env("XCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "breeze_cursors")
 hl.env("HYPRCURSOR_SIZE", "24")
 
 ----- NVIDIA VARIABLES -----
@@ -320,6 +323,9 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("vpn-menu"))
 
 -- Captura de tela (Print Screen) usando Grim + Slurp
 hl.bind(mainMod .. " + SHIFT + c", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy && notify-send 'Captura de Tela' 'Área selecionada copiada!'"))
+
+-- Histórico da área de transferência (cliphist + rofi)
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd("cliphist list | rofi -dmenu -p Clipboard | cliphist decode | wl-copy"))
 
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))

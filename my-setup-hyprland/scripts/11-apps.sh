@@ -24,6 +24,9 @@ FLATPAKS=(
     net.ankiweb.Anki
     app.zen_browser.zen
     md.obsidian.Obsidian
+    com.calibre_ebook.calibre
+    it.mijorus.gearlever
+    com.google.Chrome
 )
 
 # Checa se há conexão com a internet e alcance ao Flathub

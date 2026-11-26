@@ -29,6 +29,9 @@ sudo pacman -S --needed --noconfirm \
     ttf-nerd-fonts-symbols-common \
     ttf-jetbrains-mono-nerd
 
+step "Instalando FUSE 2/3 e GTK 3 (compatibilidade com apps que ainda precisam deles)..."
+sudo pacman -S --needed --noconfirm fuse2 fuse3 gtk3
+
 ok "Pacotes base instalados."
 
 step "Configurando o micro (softwrap)..."
@@ -61,5 +64,8 @@ log "System Monitor (Btop)"
 
 step "Instalando btop..."
 sudo pacman -S --needed --noconfirm btop
+
+step "Instalando pacman-contrib (paccache, usado na limpeza de disco)..."
+sudo pacman -S --needed --noconfirm pacman-contrib
 
 ok "btop instalado."

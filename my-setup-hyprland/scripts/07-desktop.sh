@@ -125,15 +125,21 @@ ok "Dunst configurado."
 log "Tema Escuro (Dark Theme)"
 
 step "Instalando pacotes de tema..."
-sudo pacman -S --needed --noconfirm materia-gtk-theme qt5ct qt6ct kvantum
+sudo pacman -S --needed --noconfirm materia-gtk-theme qt5ct qt6ct kvantum papirus-icon-theme breeze-cursors
 
 step "Aplicando tema via gsettings..."
 if command -v gsettings &>/dev/null; then
     gsettings set org.gnome.desktop.interface gtk-theme 'Materia-dark' || warn "Falha ao definir gtk-theme (sem sessão D-Bus?)."
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || warn "Falha ao definir color-scheme (sem sessão D-Bus?)."
+    gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark' || warn "Falha ao definir icon-theme (sem sessão D-Bus?)."
+    gsettings set org.gnome.desktop.interface cursor-theme 'breeze_cursors' || warn "Falha ao definir cursor-theme (sem sessão D-Bus?)."
     ok "Tema escuro aplicado."
 else
     warn "gsettings não encontrado; tema não aplicado."
+fi
+
+if [ ! -d /usr/share/icons/breeze_cursors ]; then
+    warn "Diretório /usr/share/icons/breeze_cursors não encontrado. Confira o nome real do tema com: ls /usr/share/icons | grep -i breeze (e ajuste XCURSOR_THEME no hyprland.lua)."
 fi
 
 ok "Tema escuro configurado."
